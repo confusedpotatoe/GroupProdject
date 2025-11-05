@@ -1,16 +1,58 @@
-name: Notify Discord on Push
+﻿name: Notify Discord (with GIF)
+
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
+  pull_request:
+    types: [opened, closed]
+  workflow_dispatch:
+
 jobs:
-  discord-notify:
+  push_notify:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    env:
+      WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
     steps:
-      - name: Send Discord notification
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Push embed (action)
+        uses: rjstone/discord-webhook-notify@v2
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          username: "Willesbot"
+          avatarUrl: "https://img.favpng.com/17/1/5/manchester-united-logo-png-png-favpng-6R3Xfm9rg1NsU8naJahynJsyD.jpg"
+          text: ""
+          title: ""
+          description: |
+          color: "#2ecc71"
+
+      - name: Push GIF (curl)
         run: |
-          curl -H "Content-Type: application/json" \
-            -X POST $DISCORD_WEBHOOK_URL \
-            -d '{"content": "🚀 Ny push till main!"}'
+          payload='{
+            "username": "nemobot",
+            "avatar_url": "https://img.favpng.com/17/1/5/manchester-united-logo-png-png-favpng-6R3Xfm9rg1NsU8naJahynJsyD.jpg",
+            "embeds": [{
+              "title": "Nemo jobbar",
+              "color": 3066993,
+              "image": { "url": "https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" }
+            }]
+          }'
+          curl -H "Content-Type: application/json" -X POST -d "$payload" "$WEBHOOK"
+
+  pr_notify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+    steps:
+      - name: PR opened (action)
+        if: github.event.action == 'opened'
+        uses: rjstone/discord-webhook-notify@v2
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          username: "Nemosbot"
+          avatarUrl: "https://img.favpng.com/17/1/5/manchester-united-logo-png-png-favpng-6R3Xfm9rg1NsU8naJahynJsyD.jpg"
+          text: "PR öppnad"
+          title: "Ny Pull Request öppnad"
+          description: |
+            📝 PR #${{ github.event.pull_request.number }} – ${{ github.event.pull_request.title }}
+          color: "#3498db"
