@@ -1,0 +1,97 @@
+name: Notify Discord on GitHub Events
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, closed, reopened]
+  issues:
+    types: [opened, closed, reopened]
+
+jobs:
+  discord-notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord embed notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_HOOK }}
+        run: |
+          # 🎨 Colors for embeds
+          COLOR_PUSH=3447003
+          COLOR_PR_OPENED=5763719
+          COLOR_PR_MERGED=16776960
+          COLOR_PR_CLOSED=15548997
+          COLOR_ISSUE=1752220
+
+          EVENT="${{ github.event_name }}"
+          ACTION="${{ github.event.action }}"
+
+          # 🧠 Välj meddelande beroende på event
+          if [ "$EVENT" = "push" ]; then
+            COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+            TITLE="🚀 Ny push till main"
+            DESC="**${{ github.actor }}** pushade:\n> ${{ github.event.head_commit.message }}\n\n[Visa commit](${COMMIT_URL})"
+            COLOR=$COLOR_PUSH
+
+          elif [ "$EVENT" = "pull_request" ]; then
+            PR_URL="${{ github.event.pull_request.html_url }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_CREATOR="${{ github.event.pull_request.user.login }}"
+
+            if [ "$ACTION" = "opened" ]; then
+              TITLE="🟢 Ny Pull Request skapad"
+              DESC="**${PR_CREATOR}** skapade en PR:\n> *${PR_TITLE}*\n\n[Visa PR](${PR_URL})"
+              COLOR=$COLOR_PR_OPENED
+            elif [ "$ACTION" = "closed" ]; then
+              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+                TITLE="🎉 Pull Request mergad"
+                DESC="**${{ github.actor }}** mergade PR av **${PR_CREATOR}**:\n> *${PR_TITLE}*\n\n[Visa PR](${PR_URL})"
+                COLOR=$COLOR_PR_MERGED
+              else
+                TITLE="❌ Pull Request stängd"
+                DESC="**${{ github.actor }}** stängde PR av **${PR_CREATOR}**:\n> *${PR_TITLE}*\n\n[Visa PR](${PR_URL})"
+                COLOR=$COLOR_PR_CLOSED
+              fi
+            elif [ "$ACTION" = "reopened" ]; then
+              TITLE="🔄 Pull Request återöppnad"
+              DESC="PR av **${PR_CREATOR}** återöppnades:\n> *${PR_TITLE}*\n\n[Visa PR](${PR_URL})"
+              COLOR=$COLOR_PR_OPENED
+            fi
+
+          elif [ "$EVENT" = "issues" ]; then
+            ISSUE_URL="${{ github.event.issue.html_url }}"
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            ISSUE_CREATOR="${{ github.event.issue.user.login }}"
+
+            if [ "$ACTION" = "opened" ]; then
+              TITLE="📝 Ny Issue skapad"
+              DESC="**${ISSUE_CREATOR}** skapade en issue:\n> *${ISSUE_TITLE}*\n\n[Visa issue](${ISSUE_URL})"
+              COLOR=$COLOR_ISSUE
+            elif [ "$ACTION" = "closed" ]; then
+              TITLE="✅ Issue stängd"
+              DESC="**${{ github.actor }}** stängde en issue av **${ISSUE_CREATOR}**.\n> *${ISSUE_TITLE}*\n\n[Visa issue](${ISSUE_URL})"
+              COLOR=$COLOR_PR_CLOSED
+            elif [ "$ACTION" = "reopened" ]; then
+              TITLE="🔄 Issue återöppnad"
+              DESC="Issue av **${ISSUE_CREATOR}** återöppnades.\n> *${ISSUE_TITLE}*\n\n[Visa issue](${ISSUE_URL})"
+              COLOR=$COLOR_PR_OPENED
+            fi
+          else
+            TITLE="ℹ️ Okänt event"
+            DESC="Ett okänt GitHub-event inträffade."
+            COLOR=0
+          fi
+
+          # Skapa JSON payload för Discord
+          JSON_PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg description "$DESC" \
+            --argjson color "$COLOR" \
+            '{embeds: [{title: $title, description: $description, color: $color}]}')
+
+          # Skicka till Discord
+          curl -H "Content-Type: application/json" \
+               -X POST "$DISCORD_WEBHOOK" \
+               -d "$JSON_PAYLOAD"
