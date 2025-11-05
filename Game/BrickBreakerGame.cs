@@ -17,15 +17,27 @@ namespace BrickBreaker.Game
     public sealed class BrickBreakerGame : IGame
     {
         // ---------------- config / state
+
         // Width/height of the play area and paddle size we render in the console.
         const int W = 60, H = 24;
         const int PaddleW = 9, TopMargin = 2;
 
+        // The paddle’s position in the console grid.
         int paddleX, paddleY;
+
+        // The ball’s position and velocity.
         int ballX, ballY, dx, dy;
-        bool[,] bricks = default!;
+
+        // bool[,] is a multidimensional array.
+        // This 2D array allows indexing: bricks[column, row].
+        bool[,] bricks = default!; // Tha default value is null, and we suppress null warnings with !
+
+        // A flag that indicates whether the game loop should continue running.
         bool running;
+
+        //A counter used to control ball speed.
         int ballTick;
+
         int score;
 
         // Windows function used to ask "is this key currently pressed?"
