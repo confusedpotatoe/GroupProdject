@@ -13,9 +13,11 @@ namespace BrickBreaker.Game
     Result: Program can call Run() without knowing how the game works or what class implements it.
     */
 
+    // Sealed class means it cannot be inherited from.
     public sealed class BrickBreakerGame : IGame
     {
         // ---------------- config / state
+        // Width/height of the play area and paddle size we render in the console.
         const int W = 60, H = 24;
         const int PaddleW = 9, TopMargin = 2;
 
@@ -26,6 +28,7 @@ namespace BrickBreaker.Game
         int ballTick;
         int score;
 
+        // Windows function used to ask "is this key currently pressed?"
         [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vKey);
         static bool IsKeyDown(int vKey) => (GetAsyncKeyState(vKey) & 0x8000) != 0;
         const int VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_ESCAPE = 0x1B;
@@ -33,10 +36,14 @@ namespace BrickBreaker.Game
         // ---------------- public entry
         public int Run()
         {
+            // Prepare game state and placement of objects.
             Init();
 
             var sw = new Stopwatch();
             var targetDt = TimeSpan.FromMilliseconds(33); // ~30 FPS
+
+            // All of the Console calls are wrapped in try/catch so the game still runs
+            // even if the terminal does not support a specific feature.
             try { Console.CursorVisible = false; } catch { }
             Console.OutputEncoding = Encoding.UTF8;
             Console.TreatControlCAsInput = true;
@@ -47,6 +54,7 @@ namespace BrickBreaker.Game
 
             while (running)
             {
+                // Run input + update steps often enough to match our target frame time.
                 var now = sw.Elapsed;
                 while (now - last >= targetDt)
                 {
@@ -66,12 +74,16 @@ namespace BrickBreaker.Game
         // ---------------- init
         void Init()
         {
+            // Start the paddle in the middle of the bottom row.
             paddleX = (W - PaddleW) / 2;
             paddleY = H - 2;
 
+            // Ball begins near the center moving up-right.
             ballX = W / 2; ballY = H / 2; dx = 1; dy = -1;
             bricks = new bool[10, 5];
             bricks = new bool[10, 5];
+
+            // Fill the brick grid with active bricks (true = brick still exists).
             for (int c = 0; c < bricks.GetLength(0); c++)
                 for (int r = 0; r < bricks.GetLength(1); r++)
                     bricks[c, r] = true;
@@ -84,6 +96,7 @@ namespace BrickBreaker.Game
         // ---------------- input
         void Input()
         {
+            // Throw away buffered key presses so we only look at the current frame.
             while (Console.KeyAvailable) Console.ReadKey(true);
             int speed = 2;
             if (IsKeyDown(VK_LEFT)) paddleX = Math.Max(1, paddleX - speed);
@@ -167,6 +180,7 @@ namespace BrickBreaker.Game
         // ---------------- collision helpers
         (bool hit, int c, int r) BrickAt(int x, int y)
         {
+            // Convert world coordinates (x, y) to indices inside the brick array.
             int cols = bricks.GetLength(0), rows = bricks.GetLength(1);
             int brickTop = TopMargin + 1, brickBottom = TopMargin + 1 + rows;
             if (y < brickTop || y >= brickBottom) return (false, -1, -1);
@@ -180,6 +194,7 @@ namespace BrickBreaker.Game
 
         bool AllBricksCleared()
         {
+            // If any brick is still true, the level is not finished yet.
             int cols = bricks.GetLength(0);
             int rows = bricks.GetLength(1);
             for (int c = 0; c < cols; c++)
@@ -191,6 +206,7 @@ namespace BrickBreaker.Game
         // ---------------- render
         void Render()
         {
+            // Build the entire frame in a StringBuilder and draw it in one go.
             var sb = new StringBuilder((W + 1) * (H + 1));
             sb.Append('┌'); sb.Append('─', W - 2); sb.Append('┐').Append('\n');
             for (int y = 1; y < H - 1; y++)
@@ -199,6 +215,7 @@ namespace BrickBreaker.Game
                 for (int x = 1; x < W - 1; x++)
                 {
                     char ch = ' ';
+
                     // bricks
                     int cols = bricks.GetLength(0), rows = bricks.GetLength(1);
                     int brickTop = TopMargin + 1, brickBottom = TopMargin + 1 + rows;
@@ -208,8 +225,10 @@ namespace BrickBreaker.Game
                         int c = (x - 1) * cols / (W - 2);
                         if (bricks[c, r]) ch = '█';
                     }
+
                     // paddle
                     if (y == paddleY && x >= paddleX && x < paddleX + PaddleW) ch = '█';
+
                     // ball
                     if (x == ballX && y == ballY) ch = '●';
                     sb.Append(ch);
