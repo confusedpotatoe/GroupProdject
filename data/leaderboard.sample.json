@@ -1,0 +1,8 @@
+// data/leaderboard.sample.json
+[
+  {
+    "Username": "demo",
+    "Score": 180,
+    "At": "2025-01-03T21:53:00+01:00"
+  }
+]

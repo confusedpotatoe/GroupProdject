@@ -1,0 +1,20 @@
+# Build artifacts
+/bin/
+/obj/
+
+# VS / Rider / IDE
+/.vs/
+/.vscode/
+/.idea/
+
+# User-specific files
+*.user
+*.suo
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Runtime app data (avoid committing real JSON data)
+users.json
+leaderboard.json
