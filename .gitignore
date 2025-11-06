@@ -14,7 +14,3 @@
 # OS noise
 .DS_Store
 Thumbs.db
-
-# Runtime app data (avoid committing real JSON data)
-users.json
-leaderboard.json
