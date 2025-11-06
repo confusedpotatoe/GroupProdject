@@ -1,4 +1,5 @@
 ﻿using BrickBreaker.Game;
+using BrickBreaker.Models;
 
 var game = new BrickBreakerGame();
 int score = game.Run();
