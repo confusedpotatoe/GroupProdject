@@ -1,4 +1,4 @@
-﻿// Temporal version
+﻿// Temporary version
 // Keeps current “run the game and print score” flow via menu option 1.
 
 using BrickBreaker.Game;
