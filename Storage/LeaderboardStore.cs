@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO; 
 using System.Text.Json;
 
-namespace BrickBreaker.Storage;
+namespace BrickBreaker.Storage; //namespace MISSING i think that did the big part, but some other changes aswell
 
 public sealed class LeaderboardStore
 {
