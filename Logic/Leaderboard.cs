@@ -1,3 +1,4 @@
+using System.Linq; // Added to enable LINQ queries for sorting and filtering
 using BrickBreaker.Models;
 using BrickBreaker.Storage;
 
@@ -22,9 +23,9 @@ public sealed class Leaderboard
     public List<ScoreEntry> Top(int n)
     {
         return _store.ReadAll()
-                     .OrderByDescending(s => s.Score)
-                     .ThenBy(s => s.At)
-                     .Take(n)
+                     .OrderByDescending(s => s.Score) // Sort scores descending
+                     .ThenBy(s => s.At) // Then sort by timestamp ascending
+                     .Take(n) // Take top n
                      .ToList();
     }
 
