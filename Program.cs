@@ -35,7 +35,7 @@ class Program
                     Console.WriteLine($"\nFinal score: {score}");
 
                     // Create a leaderboard service and write the score to the JSON file. 
-                    var lb = new Logic.Leaderboard(new Storage.LeaderboardStore("data/leaderboard.json"));
+                    var lb = new Leaderboard(new LeaderboardStore("data/leaderboard.json"));
                     lb.Submit(currentUser ?? "guest", score);
 
                     Pause();
