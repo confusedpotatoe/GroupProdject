@@ -1,6 +1,6 @@
-﻿// Temporary version
+// Temporary version
 // Keeps current “run the game and print score” flow via menu option 1.
-
+using BrickBreaker.Models;
 using BrickBreaker.Game;
 
 enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
@@ -11,6 +11,18 @@ class Program
 
     static void Main()
     {
+        /*Add a user to json
+        string path = Path.Combine("..", "..", "..", "data", "users.json");
+
+        var userStore = new UserStore(path);
+
+        User user = new User();
+
+        user.Username = Console.ReadLine();
+
+        userStore.Add(user);*/
+
+
         AppState state = AppState.LoginMenu;
 
         while (state != AppState.Exit)
