@@ -1,6 +1,7 @@
 using BrickBreaker.Models;
-
 using System.Text.Json;
+
+namespace BrickBreaker.Storage;
 
 public sealed class UserStore
 {
