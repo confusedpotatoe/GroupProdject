@@ -26,7 +26,8 @@ namespace BrickBreaker.Game
         int paddleX, paddleY;
 
         // The ball’s position and velocity.
-        int ballX, ballY, dx, dy;
+        int ballX, ballY, dy;
+        double vx, vxCarry;
 
         // bool[,] is a multidimensional array.
         // This 2D array allows indexing: bricks[column, row].
@@ -91,8 +92,7 @@ namespace BrickBreaker.Game
             paddleY = H - 2;
 
             // Ball begins near the center moving up-right.
-            ballX = W / 2; ballY = H / 2; dx = 1; dy = -1;
-            bricks = new bool[10, 5];
+            ballX = W / 2; ballY = H / 2; vx = 1; vxCarry = 0; dy = -1;
             bricks = new bool[10, 5];
 
             // Fill the brick grid with active bricks (true = brick still exists).
@@ -123,14 +123,16 @@ namespace BrickBreaker.Game
             ballTick++;
             if (ballTick % 3 != 0) return;
 
-            int nx = ballX + dx;
+            int dxStep = ConsumeHorizontalStep();
+            int nx = ballX + dxStep;
             int ny = ballY + dy;
 
             // walls (horizontal)
             if (nx <= 1 || nx >= W - 2)
             {
-                dx = -dx;
-                nx = ballX + dx;
+                ReverseHorizontalVelocity();
+                dxStep = -dxStep;
+                nx = ballX + dxStep;
             }
 
             // walls (top)
@@ -147,10 +149,9 @@ namespace BrickBreaker.Game
             {
                 dy = -dy;
 
-                // keep |dx| <= 1 to avoid tunneling
                 int hitPos = Math.Clamp(nx - paddleX, 0, PaddleW - 1);
-                dx = Math.Sign(hitPos - PaddleW / 2);
-                if (dx == 0) dx = (ballX < W / 2) ? -1 : 1;
+                ApplyPaddleBounce(hitPos);
+                dxStep = 0; // new direction handled by future steps
 
                 ny = paddleY - 1;
             }
@@ -164,8 +165,9 @@ namespace BrickBreaker.Game
                 {
                     bricks[cx, rx] = false;
                     score += 10;
-                    dx = -dx;
-                    nx = ballX + dx;
+                    ReverseHorizontalVelocity();
+                    dxStep = -dxStep;
+                    nx = ballX + dxStep;
                 }
             }
             // Y-axis
@@ -187,6 +189,44 @@ namespace BrickBreaker.Game
             // lose if ball exits bottom
             if (ballY >= H - 1) { running = false; return; }
             if (AllBricksCleared()) running = false;
+        }
+
+        int ConsumeHorizontalStep()
+        {
+            vxCarry += vx;
+            int step = 0;
+            while (vxCarry >= 1)
+            {
+                vxCarry -= 1;
+                step++;
+            }
+            while (vxCarry <= -1)
+            {
+                vxCarry += 1;
+                step--;
+            }
+            return step;
+        }
+
+        void ReverseHorizontalVelocity()
+        {
+            vx = -vx;
+            vxCarry = -vxCarry;
+        }
+
+        void ApplyPaddleBounce(int hitPos)
+        {
+            double halfWidth = (PaddleW - 1) / 2.0;
+            double offset = (hitPos - halfWidth) / halfWidth; // range -1..1
+
+            // Arkanoid-style: edge hits drive shallow angles, center is nearly vertical.
+            const double maxSpeed = 2.4;
+            double shaped = Math.Sign(offset) * Math.Pow(Math.Abs(offset), 0.65);
+            vx = Math.Clamp(shaped * maxSpeed, -maxSpeed, maxSpeed);
+
+            if (Math.Abs(vx) < 0.25)
+                vx = (ballX < W / 2) ? -0.25 : 0.25;
+            vxCarry = 0;
         }
 
         // ---------------- collision helpers
