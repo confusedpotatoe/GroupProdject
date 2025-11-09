@@ -1,8 +1,6 @@
 using BrickBreaker.Models;
 
-using System.Security;
 using System.Text.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 public sealed class UserStore
 {
