@@ -34,9 +34,9 @@ class Program
                     int score = game.Run();
                     Console.WriteLine($"\nFinal score: {score}");
 
-                    
-                     var lb = new Logic.Leaderboard(new Storage.LeaderboardStore("data/leaderboard.json"));
-                     lb.Submit(currentUser ?? "guest", score);
+                    // Create a leaderboard service and write the score to the JSON file. 
+                    var lb = new Logic.Leaderboard(new Storage.LeaderboardStore("data/leaderboard.json"));
+                    lb.Submit(currentUser ?? "guest", score);
 
                     Pause();
                     state = currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
