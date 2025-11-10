@@ -13,7 +13,7 @@ class Program
 {
     static string? currentUser = null; // TODO: set after Login
 
-    private static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
+    private static readonly LeaderboardStore _lbStore = new("../../../data/leaderboard.json");
     private static readonly Leaderboard _lb = new(_lbStore);
     static void Main()
     {
@@ -130,8 +130,13 @@ class Program
 
             case '4':
 
-                // TODO: show Top 10 via Logic/Leaderboard.Top(10)
-                Console.WriteLine("\n[TODO] Leaderboard: implement Logic/Leaderboard + Storage/LeaderboardStore.");
+                Console.WriteLine("\nTop 10 leaderboard: ");
+                var top = _lb.Top(10);
+                foreach (var item in top)
+                {
+                    Console.WriteLine($"{item.Username} - {item.Score} - {item.At}");
+                }
+
                 Pause();
                 return AppState.LoginMenu;
 
@@ -145,11 +150,13 @@ class Program
 
     static AppState HandleGameplayMenu()
     {
+        string path = Path.Combine("..", "..", "..", "data", "users.json");
+
         Console.Clear();
         Console.WriteLine($"=== Gameplay Menu (user: {currentUser ?? "guest"}) ===");
         Console.WriteLine("1) Start");
         Console.WriteLine("2) High Score (your best) (TODO: Leaderboard.BestFor)");
-        Console.WriteLine("3) Leaderboard (top 10)  (TODO: Leaderboard.Top)");
+        Console.WriteLine("3) Leaderboard (top 10)");
         Console.WriteLine("4) Logout");
         Console.Write("Choose: ");
         var key = Console.ReadKey(true).KeyChar;
@@ -161,11 +168,18 @@ class Program
 
             case '2':
                 Console.WriteLine("\n[TODO] Show your best score via Leaderboard.BestFor(username).");
+                
                 Pause();
                 return AppState.GameplayMenu;
 
             case '3':
-                Console.WriteLine("\n[TODO] Show Top 10 via Leaderboard.Top(10).");
+                Console.WriteLine("\nTop 10 leaderboard: ");
+                var top = _lb.Top(10);
+                foreach (var item in top)
+                {
+                    Console.WriteLine($"{item.Username} - {item.Score} - {item.At}");
+                }
+
                 Pause();
                 return AppState.GameplayMenu;
 
