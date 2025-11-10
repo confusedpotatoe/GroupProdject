@@ -23,7 +23,6 @@ class Program
         AppState state = AppState.LoginMenu;
         while (state != AppState.Exit)
 
-
         while (state != AppState.Exit)
         {
             switch (state)
@@ -41,10 +40,9 @@ class Program
                     // Play the game
                     IGame game = new BrickBreakerGame();
                     int score = game.Run();
-                    Console.WriteLine($"\nFinal score: {score}");
+                    Console.WriteLine($"\nFinal score: {score}");;
 
-                    // Create a leaderboard service and write the score to the JSON file. 
-                    var lb = new Leaderboard(new LeaderboardStore("data/leaderboard.json"));
+                    var lb = new Leaderboard(new LeaderboardStore(Path.Combine("..", "..", "..", "data/leaderboard.json")));
                     lb.Submit(currentUser ?? "guest", score);
 
                     Pause();
