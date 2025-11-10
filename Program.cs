@@ -5,7 +5,12 @@ using BrickBreaker.Game;
 using BrickBreaker.Logic;
 using BrickBreaker.Storage;
 
+//These are created once and reused for the entire program lifetime
+private static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
+private static readonly Leaderboard _lb = new(_lbStore);
+
 enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
+
 
 class Program
 {
@@ -45,10 +50,8 @@ class Program
                     IGame game = new BrickBreakerGame();
                     int score = game.Run();
                     Console.WriteLine($"\nFinal score: {score}");
-
-                    // Create a leaderboard service and write the score to the JSON file. 
-                    var lb = new Leaderboard(new LeaderboardStore("data/leaderboard.json"));
-                    lb.Submit(currentUser ?? "guest", score);
+                    //Save result to leaderboard using the shared instance
+                    _lb.Submit(currentUser ?? "guest", score);
 
                     Pause();
                     state = currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
