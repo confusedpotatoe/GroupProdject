@@ -5,6 +5,7 @@ using BrickBreaker.Game;
 using BrickBreaker.Logic;
 using BrickBreaker.Storage;
 
+
 enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
 
 class Program
@@ -13,19 +14,28 @@ class Program
 
     static void Main()
     {
-        /*Add a user to json
-        string path = Path.Combine("..", "..", "..", "data", "users.json");
 
-        var userStore = new UserStore(path);
 
-        User user = new User();
-
-        user.Username = Console.ReadLine();
-
-        userStore.Add(user);*/
-
+        string userFilePath = Path.Combine("data", "users.json");
+        var userStore = new UserStore(userFilePath);
+        auth = new Auth(userStore);  // Initialize here
 
         AppState state = AppState.LoginMenu;
+        while (state != AppState.Exit)
+
+            /*Add a user to json
+            string path = Path.Combine("..", "..", "..", "data", "users.json");
+
+            var userStore = new UserStore(path);
+
+            User user = new User();
+
+            user.Username = Console.ReadLine();
+
+            userStore.Add(user);*/
+
+
+            
 
         while (state != AppState.Exit)
         {
@@ -56,6 +66,7 @@ class Program
             }
         }
     }
+    static Auth auth;
 
     static AppState HandleLoginMenu()
     {
@@ -83,14 +94,25 @@ class Program
                 return AppState.LoginMenu;
 
             case '3':
+                {
+                    Console.Write("Username: ");
+                    string username = Console.ReadLine()?.Trim() ?? "";
 
-                // TODO: create Auth.Login(username, password) and set currentUser on success
-                Console.WriteLine("\n[TODO] Login: implement Logic/Auth.Login and set currentUser.");
-                // Example target when ready:
-                // currentUser = "<username>";
-                // return AppState.GameplayMenu;
-                Pause();
-                return AppState.LoginMenu;
+                    Console.Write("Password: ");
+                    string password = Console.ReadLine()?.Trim() ?? "";
+
+                    if (auth.Login(username, password))
+                    {
+                        currentUser = username;
+                        return AppState.GameplayMenu;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Login failed (wrong username or password).");
+                        Pause();
+                        return AppState.LoginMenu;
+                    }
+                }
 
             case '4':
 
