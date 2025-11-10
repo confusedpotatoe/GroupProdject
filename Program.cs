@@ -56,22 +56,22 @@ class Program
     {
         Console.Clear();
         Console.WriteLine("=== Main Menu ===");
-        Console.WriteLine("1) Quick Play (runs game now)");
-        Console.WriteLine("2) Register   (TODO: Logic/Auth + Storage/UserStore)");
-        Console.WriteLine("3) Login      (TODO: Logic/Auth + Storage/UserStore)");
-        Console.WriteLine("4) Leaderboard (view top 10) (TODO: Logic/Leaderboard + Storage/LeaderboardStore)");
-        Console.WriteLine("5) Exit");
+        
+        Console.WriteLine("1) Register");
+        Console.WriteLine("2) Login");
+        Console.WriteLine("3) Leaderboard (view top 10)");
+        Console.WriteLine("4) Exit");
         Console.Write("Choose: ");
         var key = Console.ReadKey(true).KeyChar;
 
         switch (key)
         {
-            case '1':
+            /*case '1':
                 // Quick Play path: no auth, just run the game
                 currentUser = null;
-                return AppState.Playing;
+                return AppState.Playing;*/
 
-            case '2':
+            case '1':
                 // Register new user
                 string path = Path.Combine("..", "..", "..", "data", "users.json");
                 var userStore = new UserStore(path);
@@ -99,7 +99,7 @@ class Program
                 Pause();
                 return AppState.LoginMenu;
 
-            case '3':
+            case '2':
                 {
                     var freshPath = Path.Combine("..", "..", "..", "data", "users.json");
                     auth = new Auth(new UserStore(freshPath));
@@ -124,14 +124,14 @@ class Program
                     }
                 }
 
-            case '4':
+            case '3':
 
                 // TODO: show Top 10 via Logic/Leaderboard.Top(10)
                 Console.WriteLine("\n[TODO] Leaderboard: implement Logic/Leaderboard + Storage/LeaderboardStore.");
                 Pause();
                 return AppState.LoginMenu;
 
-            case '5':
+            case '4':
                 return AppState.Exit;
 
             default:
