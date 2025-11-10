@@ -76,6 +76,24 @@ class Program
 
             case '2':
                 // TODO: create Auth.Register(username, password)
+                string path = Path.Combine("..", "..", "..", "data", "users.json");
+                var userStore = new UserStore(path);
+                User user = new User();
+
+                Console.Write("\nChoose a username: ");
+                user.Username = Console.ReadLine()?.Trim() ?? "";
+                Console.Write("Choose a password: ");
+                user.Password = Console.ReadLine()?.Trim() ?? "";
+
+                if (userStore.Exists(user.Username))
+                {
+                    Console.WriteLine("Username already exists. Please choose another one.");
+                    Pause();
+                    return AppState.LoginMenu;
+                }
+
+                userStore.Add(user);
+
                 Console.WriteLine("\n[TODO] Register: implement Logic/Auth.Register and Storage/UserStore.");
                 Pause();
                 return AppState.LoginMenu;
