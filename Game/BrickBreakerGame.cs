@@ -60,6 +60,7 @@ namespace BrickBreaker.Game
             Init();
 
             sw.Start(); // Start the stopwatch to measure elapsed time
+            gameTimer.Reset();
             gameTimer.Start(); // Start the game timer
 
 
@@ -71,7 +72,6 @@ namespace BrickBreaker.Game
             Console.TreatControlCAsInput = true;
             try { Console.SetWindowSize(Math.Max(Console.WindowWidth, W + 2), Math.Max(Console.WindowHeight, H + 2)); } catch { }
 
-            sw.Start();
             var last = sw.Elapsed;
 
             while (running)
