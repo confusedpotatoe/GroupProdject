@@ -87,11 +87,27 @@ class Program
                 currentUser = null;
                 return AppState.Playing;
 
+            
             case '2':
-                // TODO: create Auth.Register(username, password)
-                Console.WriteLine("\n[TODO] Register: implement Logic/Auth.Register and Storage/UserStore.");
-                Pause();
-                return AppState.LoginMenu;
+                {
+                    Console.Write("Choose a username: ");
+                    string username = Console.ReadLine()?.Trim() ?? "";
+
+                    Console.Write("Choose a password: ");
+                    string password = Console.ReadLine()?.Trim() ?? "";
+
+                    if (auth.Register(username, password))
+                    {
+                        Console.WriteLine("Registration successful! Please log in.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Registration failed (username may already exist or fields blank).");
+                    }
+                    Pause();
+                    return AppState.LoginMenu;
+                }
+
 
             case '3':
                 {
