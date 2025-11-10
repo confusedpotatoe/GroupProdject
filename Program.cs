@@ -23,19 +23,6 @@ class Program
         AppState state = AppState.LoginMenu;
         while (state != AppState.Exit)
 
-            /*Add a user to json
-            string path = Path.Combine("..", "..", "..", "data", "users.json");
-
-            var userStore = new UserStore(path);
-
-            User user = new User();
-
-            user.Username = Console.ReadLine();
-
-            userStore.Add(user);*/
-
-
-            
 
         while (state != AppState.Exit)
         {
