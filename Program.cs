@@ -13,19 +13,18 @@ class Program
 {
     static string? currentUser = null; // TODO: set after Login
 
+    private static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
+    private static readonly Leaderboard _lb = new(_lbStore);
     static void Main()
     {
         //These are created once and reused for the entire program lifetime
-        private static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
-        private static readonly Leaderboard _lb = new(_lbStore);
-
-    AppState state = AppState.LoginMenu;
         
         string userFilePath = Path.Combine("data", "users.json");
         var userStore = new UserStore(userFilePath);
         auth = new Auth(userStore);  // Initialize here
 
         AppState state = AppState.LoginMenu;
+
         while (state != AppState.Exit)
 
         while (state != AppState.Exit)
