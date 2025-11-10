@@ -72,7 +72,6 @@ namespace BrickBreaker.Game
             Console.TreatControlCAsInput = true;
             try { Console.SetWindowSize(Math.Max(Console.WindowWidth, W + 2), Math.Max(Console.WindowHeight, H + 2)); } catch { }
 
-            sw.Start();
             var last = sw.Elapsed;
 
             while (running)
