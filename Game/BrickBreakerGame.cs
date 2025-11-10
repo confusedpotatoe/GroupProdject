@@ -14,8 +14,12 @@ namespace BrickBreaker.Game
     */
 
     // Sealed class means it cannot be inherited from.
+
+    
+
     public sealed class BrickBreakerGame : IGame
     {
+        private Stopwatch gameTimer = new Stopwatch(); // Timer to track game duration
         // ---------------- config / state
 
         // Width/height of the play area and paddle size we render in the console.
@@ -49,11 +53,16 @@ namespace BrickBreaker.Game
         // ---------------- public entry
         public int Run()
         {
+            var sw = new Stopwatch(); // Stopwatch to measure elapsed time
+            var targetDt = TimeSpan.FromMilliseconds(33); // Target delta time for ~30 FPS
+
             // Prepare game state and placement of objects.
             Init();
 
-            var sw = new Stopwatch();
-            var targetDt = TimeSpan.FromMilliseconds(33); // ~30 FPS
+            sw.Start(); // Start the stopwatch to measure elapsed time
+            gameTimer.Start(); // Start the game timer
+
+
 
             // All of the Console calls are wrapped in try/catch so the game still runs
             // even if the terminal does not support a specific feature.
@@ -79,10 +88,16 @@ namespace BrickBreaker.Game
                 var sleep = targetDt - (sw.Elapsed - now);
                 if (sleep > TimeSpan.Zero) Thread.Sleep(sleep);
             }
-
+            gameTimer.Stop(); // Stop the game timer
             try { Console.SetCursorPosition(0, H + 1); Console.CursorVisible = true; } catch { }
+            
+
+            Console.WriteLine($"Game time: {gameTimer.Elapsed:mm\\:ss\\.ff}");
             return score;
         }
+
+        
+
 
         // ---------------- init
         void Init()
@@ -254,6 +269,8 @@ namespace BrickBreaker.Game
                     if (bricks[c, r]) return false;
             return true;
         }
+      
+
 
         // ---------------- render
         void Render()
