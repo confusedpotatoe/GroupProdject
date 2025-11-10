@@ -5,10 +5,6 @@ using BrickBreaker.Game;
 using BrickBreaker.Logic;
 using BrickBreaker.Storage;
 
-//These are created once and reused for the entire program lifetime
-private static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
-private static readonly Leaderboard _lb = new(_lbStore);
-
 enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
 
 
@@ -18,19 +14,22 @@ class Program
 
     static void Main()
     {
-        /*Add a user to json
-        string path = Path.Combine("..", "..", "..", "data", "users.json");
+        //These are created once and reused for the entire program lifetime
+        private static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
+        private static readonly Leaderboard _lb = new(_lbStore);
+    /*Add a user to json
+    string path = Path.Combine("..", "..", "..", "data", "users.json");
 
-        var userStore = new UserStore(path);
+    var userStore = new UserStore(path);
 
-        User user = new User();
+    User user = new User();
 
-        user.Username = Console.ReadLine();
+    user.Username = Console.ReadLine();
 
-        userStore.Add(user);*/
+    userStore.Add(user);*/
 
 
-        AppState state = AppState.LoginMenu;
+    AppState state = AppState.LoginMenu;
 
         while (state != AppState.Exit)
         {
