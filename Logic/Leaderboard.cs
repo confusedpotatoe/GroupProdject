@@ -14,29 +14,36 @@ public sealed class Leaderboard
         _store.Add(entry);
     }
 
-    // convenience overload
     public void Submit(string username, int score)
     {
-        _store.Add(new ScoreEntry(username, score, DateTime.Now));
+        if (string.IsNullOrWhiteSpace(username) || score < 0) return;
+        _store.Add(new ScoreEntry(username.Trim(), score, DateTimeOffset.UtcNow));
     }
 
     public List<ScoreEntry> Top(int n)
     {
-        return _store.ReadAll()
-                     .OrderByDescending(s => s.Score) // Sort scores descending
-                     .ThenBy(s => s.At) // Then sort by timestamp ascending
-                     .Take(n) // Take top n
-                     .ToList();
+        var list = _store.ReadAll();
+        return list
+            .Where(s => !string.IsNullOrWhiteSpace(s.Username) && s.Score >= 0)
+            .OrderByDescending(s => s.Score)
+            .ThenBy(s => s.At)
+            .ThenBy(s => s.Username, StringComparer.OrdinalIgnoreCase)
+            .Take(n)
+            .ToList();
     }
 
     public ScoreEntry? BestFor(string username)
     {
-        return _store.ReadAll()
-                     .Where(s => s.Username.Equals(username, StringComparison.OrdinalIgnoreCase))
-                     .OrderByDescending(s => s.Score)
-                     .ThenBy(s => s.At)
-                     .FirstOrDefault();
+        var list = _store.ReadAll();
+        return list
+            .Where(s => !string.IsNullOrWhiteSpace(s.Username) &&
+                        s.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(s => s.Score)
+            .ThenBy(s => s.At)
+            .ThenBy(s => s.Username, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
     }
+
 }
 
 

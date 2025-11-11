@@ -24,13 +24,12 @@ class Program
     static void Main()
     {
         //These are created once and reused for the entire program lifetime
-        
+
         string userFilePath = Path.Combine("data", "users.json");
         var userStore = new UserStore(userFilePath);
-        auth = new Auth(userStore);  // Initialize here
+        _auth = new Auth(userStore);  // Initialize here
 
         AppState state = AppState.LoginMenu;
-
 
         while (state != AppState.Exit)
         {
@@ -59,7 +58,7 @@ class Program
             }
         }
     }
-    static Auth auth;
+    static Auth _auth;
 
     static AppState HandleLoginMenu()
     {
