@@ -25,7 +25,7 @@ class Program
 
         AppState state = AppState.LoginMenu;
 
-        while (state != AppState.Exit)
+        
 
         while (state != AppState.Exit)
         {
