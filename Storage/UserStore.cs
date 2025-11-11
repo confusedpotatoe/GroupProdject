@@ -35,9 +35,12 @@ public sealed class UserStore
     }
     public List<User> ReadAll()
     {
-        if (!File.Exists(_path)) return new List<User>();
+        if (!File.Exists(_path)) return new();
 
-        var json = File.ReadAllText(_path);
+        try
+        {
+            var json = File.ReadAllText(_path);
+            if (string.IsNullOrWhiteSpace(json)) return new();
 
         if (string.IsNullOrWhiteSpace(json)) return new List<User>();
 
@@ -51,6 +54,7 @@ public sealed class UserStore
             return new List<User>();
         }
     }
+
     private void WriteAll(List<User> users)
     {
         var dir = Path.GetDirectoryName(_path);
