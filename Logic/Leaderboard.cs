@@ -17,7 +17,7 @@ public sealed class Leaderboard
     // convenience overload
     public void Submit(string username, int score)
     {
-        _store.Add(new ScoreEntry(username, score, DateTimeOffset.UtcNow));
+        _store.Add(new ScoreEntry(username, score, DateTime.Now));
     }
 
     public List<ScoreEntry> Top(int n)
