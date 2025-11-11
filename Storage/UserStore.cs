@@ -35,16 +35,26 @@ public sealed class UserStore
     }
     public List<User> ReadAll()
     {
-        if (!File.Exists(_path)) return new List<User>();
+        if (!File.Exists(_path)) return new();
 
-        var json = File.ReadAllText(_path);
+        try
+        {
+            var json = File.ReadAllText(_path);
+            if (string.IsNullOrWhiteSpace(json)) return new();
 
         if (string.IsNullOrWhiteSpace(json)) return new List<User>();
 
-        var list = JsonSerializer.Deserialize<List<User>>(json);
-
-        return list ?? new List<User>();
+        try
+        {
+            return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
+        }
+        catch (JsonException)
+        {
+            Console.WriteLine("UserStore: users.json is invalid or corrupted. Returning an empty list.");
+            return new List<User>();
+        }
     }
+
     private void WriteAll(List<User> users)
     {
         var dir = Path.GetDirectoryName(_path);
