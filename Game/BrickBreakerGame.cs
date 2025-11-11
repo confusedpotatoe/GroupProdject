@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
+
 namespace BrickBreaker.Game
 {
     /*
@@ -18,7 +19,13 @@ namespace BrickBreaker.Game
     
 
     public sealed class BrickBreakerGame : IGame
+        
+
     {
+        bool _paused = false;
+        bool _prevSpaceDown = false;
+
+
         private Stopwatch gameTimer = new Stopwatch(); // Timer to track game duration
         // ---------------- config / state
 
@@ -123,17 +130,45 @@ namespace BrickBreaker.Game
         // ---------------- input
         void Input()
         {
-            // Throw away buffered key presses so we only look at the current frame.
+            // Rensa buffrade tangenter (som tidigare)
             while (Console.KeyAvailable) Console.ReadKey(true);
+
+            // Läs tangentstatus
+            bool spaceDown = IsKeyDown((int)ConsoleKey.Spacebar);
+
+            // Växla pausläge om mellanslag trycks ned (men inte hålls nere)
+            if (spaceDown && !_prevSpaceDown)
+                _paused = !_paused;
+
+
+            _prevSpaceDown = spaceDown;
+
+            // ESC avslutar alltid
+            if (IsKeyDown(VK_ESCAPE))
+                running = false;
+
+            // Om pausad: ignorera rörelseinput
+            if (_paused)
+                return;
+
+            // Paddelrörelse
             int speed = 2;
-            if (IsKeyDown(VK_LEFT)) paddleX = Math.Max(1, paddleX - speed);
-            if (IsKeyDown(VK_RIGHT)) paddleX = Math.Min(W - PaddleW - 1, paddleX + speed);
-            if (IsKeyDown(VK_ESCAPE)) running = false;
+            if (IsKeyDown(VK_LEFT))
+                paddleX = Math.Max(1, paddleX - speed);
+            if (IsKeyDown(VK_RIGHT))
+                paddleX = Math.Min(W - PaddleW - 1, paddleX + speed);
+
         }
+
 
         // ---------------- update
         void Update()
         {
+
+            if (_paused)
+                return;
+
+
             // slow ball: run logic 1/3 ticks
             ballTick++;
             if (ballTick % 3 != 0) return;
@@ -308,6 +343,15 @@ namespace BrickBreaker.Game
 
             Console.SetCursorPosition(0, 0);
             Console.Write(sb.ToString());
+            if (_paused)
+            {
+                // Visa tydligt att spelet är pausat
+                Console.SetCursorPosition(W / 2 - 3, 0);
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write("PAUSED");
+                Console.ResetColor();
+            }
+
         }
     }
 }
