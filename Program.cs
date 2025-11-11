@@ -18,14 +18,14 @@ class Program
     static void Main()
     {
         //These are created once and reused for the entire program lifetime
-        
+
         string userFilePath = Path.Combine("data", "users.json");
         var userStore = new UserStore(userFilePath);
-        auth = new Auth(userStore);  // Initialize here
+        _auth = new Auth(userStore);  // Initialize here
 
         AppState state = AppState.LoginMenu;
 
-        
+
 
         while (state != AppState.Exit)
         {
@@ -54,13 +54,13 @@ class Program
             }
         }
     }
-    static Auth auth;
+    static Auth _auth;
 
     static AppState HandleLoginMenu()
     {
         Console.Clear();
         Console.WriteLine("=== Main Menu ===");
-        
+
         Console.WriteLine("1) Register");
         Console.WriteLine("2) Login");
         Console.WriteLine("3) Leaderboard (view top 10)");
@@ -76,46 +76,27 @@ class Program
                 return AppState.Playing;*/
 
             case '1':
-                // Register new user
-                string path = Path.Combine("..", "..", "..", "data", "users.json");
-                var userStore = new UserStore(path);
-                User user = new User();
 
-                // Get username and password
                 Console.Write("\nChoose a username: ");
-                user.Username = Console.ReadLine()?.Trim() ?? "";
+                var username = Console.ReadLine();
+
                 Console.Write("Choose a password: ");
-                user.Password = Console.ReadLine()?.Trim() ?? "";
+                var password = Console.ReadLine();
 
-                // Check if username already exists
-                if (userStore.Exists(user.Username))
-                {
-                    Console.WriteLine("Username already exists. Please choose another one.");
-                    Pause();
-                    return AppState.LoginMenu;
-                }
-
-                // Add user to store
-                userStore.Add(user);
-
-                // Confirm registration
-                Console.WriteLine("Registration successful! You can now log in.");
+                bool ok = _auth.Register(username, password);
+                Console.WriteLine(ok ? "Registration successful!" : "Registration failed.");
                 Pause();
                 return AppState.LoginMenu;
 
             case '2':
                 {
-                    var freshPath = Path.Combine("..", "..", "..", "data", "users.json");
-                    auth = new Auth(new UserStore(freshPath));
-
-
                     Console.Write("Username: ");
-                    string username = Console.ReadLine()?.Trim() ?? "";
+                    username = Console.ReadLine();
 
                     Console.Write("Password: ");
-                    string password = Console.ReadLine()?.Trim() ?? "";
+                    password = Console.ReadLine();
 
-                    if (auth.Login(username, password))
+                    if (_auth.Login(username, password))
                     {
                         currentUser = username;
                         return AppState.GameplayMenu;
@@ -168,7 +149,7 @@ class Program
 
             case '2':
                 Console.WriteLine("\n[TODO] Show your best score via Leaderboard.BestFor(username).");
-                
+
                 Pause();
                 return AppState.GameplayMenu;
 
