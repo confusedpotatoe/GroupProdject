@@ -35,17 +35,15 @@ public sealed class UserStore
     }
     public List<User> ReadAll()
     {
-        if (!File.Exists(_path)) return new();
+        if (!File.Exists(_path))
+            return new List<User>();
 
         try
         {
             var json = File.ReadAllText(_path);
-            if (string.IsNullOrWhiteSpace(json)) return new();
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<User>();
 
-        if (string.IsNullOrWhiteSpace(json)) return new List<User>();
-
-        try
-        {
             return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
         }
         catch (JsonException)
