@@ -18,6 +18,9 @@ class Program
     private static readonly Leaderboard _lb = new(_lbStore);
 
     static ILoginMenu _loginMenu = new ConsoleLoginMenu();
+
+    static IGameplayMenu _gameplayMenu = new ConsoleGameplayMenu();
+
     static void Main()
     {
         //These are created once and reused for the entire program lifetime
@@ -91,40 +94,24 @@ class Program
 
     static AppState HandleGameplayMenu()
     {
-        string path = Path.Combine("..", "..", "..", "data", "users.json");
+        var choice = _gameplayMenu.Show(currentUser ?? "guest");
 
-        Console.Clear();
-        Console.WriteLine($"=== Gameplay Menu (user: {currentUser ?? "guest"}) ===");
-        Console.WriteLine("1) Start");
-        Console.WriteLine("2) High Score (your best) (TODO: Leaderboard.BestFor)");
-        Console.WriteLine("3) Leaderboard (top 10)");
-        Console.WriteLine("4) Logout");
-        Console.Write("Choose: ");
-        var key = Console.ReadKey(true).KeyChar;
-
-        switch (key)
+        switch (choice)
         {
-            case '1':
+            case GameplayMenuChoice.Start:
                 return AppState.Playing;
 
-            case '2':
+            case GameplayMenuChoice.Best:
                 Console.WriteLine("\n[TODO] Show your best score via Leaderboard.BestFor(username).");
-                
                 Pause();
                 return AppState.GameplayMenu;
 
-            case '3':
-                Console.WriteLine("\nTop 10 leaderboard: ");
-                var top = _lb.Top(10);
-                foreach (var item in top)
-                {
-                    Console.WriteLine($"{item.Username} - {item.Score} - {item.At}");
-                }
-
+            case GameplayMenuChoice.Leaderboard:
+                ShowLeaderboard();
                 Pause();
                 return AppState.GameplayMenu;
 
-            case '4':
+            case GameplayMenuChoice.Logout:
                 currentUser = null;
                 return AppState.LoginMenu;
 
@@ -132,6 +119,7 @@ class Program
                 return AppState.GameplayMenu;
         }
     }
+
 
     static void DoRegister()
     {
