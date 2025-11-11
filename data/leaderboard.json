@@ -6,7 +6,43 @@
   },
   {
     "Username": "olof",
-    "Score": 10,
+    "Score": 2000,
     "At": "2025-11-10T13:31:07.0460753+00:00"
+  },
+  {
+    "Username": "testUser1",
+    "Score": 1500,
+    "At": "2025-11-10T10:00:00Z"
+  },
+  {
+    "Username": "testUser3",
+    "Score": 1555,
+    "At": "2025-11-09T09:00:00Z"
+  },
+  {
+    "Username": "testUser2",
+    "Score": 1200,
+    "At": "2025-11-10T11:00:00Z"
+  },
+  {
+    "Username": "William",
+    "Score": 300000,
+    "At": "2025-11-10T12:00:00Z"
+  },
+  {
+    "Username": "",
+    "Score": 200,
+    "At": "2025-11-09T12:00:00Z"
+  },
+  {
+    "Username": null,
+    "Score": 300,
+    "At": "2025-11-08T12:00:00Z"
+  },
+  {
+    "Username": "alice",
+    "Score": 150,
+    "At": "2025-11-11T12:00:00Z"
   }
+
 ]

@@ -23,16 +23,18 @@ public sealed class Leaderboard
     public List<ScoreEntry> Top(int n)
     {
         return _store.ReadAll()
-                     .OrderByDescending(s => s.Score) // Sort scores descending
-                     .ThenBy(s => s.At) // Then sort by timestamp ascending
-                     .Take(n) // Take top n
+                     .Where(s => !string.IsNullOrEmpty(s.Username)) // filter out invalid entries
+                     .OrderByDescending(s => s.Score)
+                     .ThenBy(s => s.At)
+                     .Take(n)
                      .ToList();
     }
 
     public ScoreEntry? BestFor(string username)
     {
         return _store.ReadAll()
-                     .Where(s => s.Username.Equals(username, StringComparison.OrdinalIgnoreCase))
+                     .Where(s => !string.IsNullOrEmpty(s.Username) &&
+                                 s.Username.Equals(username, StringComparison.OrdinalIgnoreCase))
                      .OrderByDescending(s => s.Score)
                      .ThenBy(s => s.At)
                      .FirstOrDefault();
