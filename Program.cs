@@ -1,5 +1,6 @@
 // Program.cs — minimal, runnable, with Auth/Leaderboard singletons and UI split points
 
+using System.Runtime.InteropServices;
 using BrickBreaker.Game;
 using BrickBreaker.Logic;
 using BrickBreaker.Models;
@@ -58,6 +59,7 @@ class Program
 
     static AppState HandleLoginMenu()
     {
+        ClearInputBuffer();
         var choice = _loginMenu.Show();
 
         switch (choice)
@@ -87,6 +89,7 @@ class Program
 
     static AppState HandleGameplayMenu()
     {
+        ClearInputBuffer();
         var choice = _gameplayMenu.Show(currentUser ?? "guest");
 
         switch (choice)
@@ -129,6 +132,7 @@ class Program
 
     static bool DoLogin()
     {
+        Console.WriteLine();
         Console.Write("Username: ");
         var username = Console.ReadLine();
 
@@ -161,7 +165,37 @@ class Program
 
     static void Pause()
     {
-        Console.WriteLine("\nPress any key...");
-        Console.ReadKey(true);
+        ClearInputBuffer();
+        Console.WriteLine("\nPress Enter to continue...");
+        while (true)
+        {
+            var key = Console.ReadKey(true);
+            if (key.Key == ConsoleKey.Enter) break;
+        }
+    }
+
+    const int STD_INPUT_HANDLE = -10;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern IntPtr GetStdHandle(int nStdHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool FlushConsoleInputBuffer(IntPtr hConsoleInput);
+
+    static void ClearInputBuffer()
+    {
+        while (Console.KeyAvailable)
+            Console.ReadKey(true);
+
+        try
+        {
+            var handle = GetStdHandle(STD_INPUT_HANDLE);
+            if (handle != IntPtr.Zero)
+                FlushConsoleInputBuffer(handle);
+        }
+        catch
+        {
+            // ignored: console might not be Windows or handle unavailable
+        }
     }
 }
