@@ -16,12 +16,13 @@ namespace BrickBreaker.Game
 
         private IWavePlayer? soundtrackPlayer;
         private AudioFileReader? soundtrackReader;
+        private bool musicActive = false;
+        private EventHandler<StoppedEventArgs>? playbackStoppedHandler;
 
-        // Playlist array
         string[] playlist = new string[]
         {
-    "Assets/Sounds/Backbeat.mp3",   // Your first song
-    "Assets/Sounds/Arpent.mp3"      // Your second song
+            "Assets/Sounds/Backbeat.mp3",   // first song
+            "Assets/Sounds/Arpent.mp3"      // second song
         };
         int currentTrack = 0;
 
@@ -35,50 +36,87 @@ namespace BrickBreaker.Game
         bool running;
         int ballTick;
         int score;
+        int lives = 3;
 
         Random random = new Random();
         List<Ball> balls = new List<Ball>();
         List<PowerUp> powerUps = new List<PowerUp>();
+        List<bool[,]> levels = new List<bool[,]>();
+        int currentLevel = 0;
+
+        bool waitingForLaunch = true;
 
         [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vKey);
         static bool IsKeyDown(int vKey) => (GetAsyncKeyState(vKey) & 0x8000) != 0;
         const int VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_ESCAPE = 0x1B;
+
+        // --- Score pop-up and multiplier ---
+        int hitMultiplier = 0;
+        class ScorePop
+        {
+            public int X, Y, Score;
+            public int Duration; // frames remaining to display
+        }
+        List<ScorePop> scorePops = new List<ScorePop>();
+
+        private void StartMusic()
+        {
+            musicActive = true;
+            soundtrackReader = new AudioFileReader(playlist[currentTrack]);
+            soundtrackPlayer = new WaveOutEvent();
+
+            playbackStoppedHandler = (s, e) =>
+            {
+                if (!musicActive) return;
+                currentTrack++;
+                if (currentTrack >= playlist.Length) currentTrack = 0;
+                soundtrackReader?.Dispose();
+                soundtrackReader = new AudioFileReader(playlist[currentTrack]);
+                soundtrackPlayer.Init(soundtrackReader);
+                soundtrackPlayer.Play();
+            };
+
+            soundtrackPlayer.PlaybackStopped += playbackStoppedHandler;
+            soundtrackPlayer.Init(soundtrackReader);
+            soundtrackPlayer.Play();
+        }
+
+        private void StopMusic()
+        {
+            musicActive = false;
+            if (soundtrackPlayer != null)
+            {
+                if (playbackStoppedHandler != null)
+                    soundtrackPlayer.PlaybackStopped -= playbackStoppedHandler;
+
+                soundtrackPlayer.Stop();
+                soundtrackPlayer.Dispose();
+                soundtrackPlayer = null;
+            }
+
+            if (soundtrackReader != null)
+            {
+                soundtrackReader.Dispose();
+                soundtrackReader = null;
+            }
+        }
 
         public int Run()
         {
             var sw = new Stopwatch();
             var targetDt = TimeSpan.FromMilliseconds(33);
 
+            Console.SetCursorPosition(2, 0);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write($"Lives: {lives}  Score: {score}  Level: {currentLevel + 1}");
+            Console.ResetColor();
+
             Init();
-
-            try
-            {
-                soundtrackReader = new AudioFileReader(playlist[currentTrack]);
-                soundtrackPlayer = new WaveOutEvent();
-                soundtrackPlayer.Init(soundtrackReader);
-                soundtrackPlayer.Play();
-
-                // Handler: go to next song after one finishes
-                soundtrackPlayer.PlaybackStopped += (s, e) =>
-                {
-                    currentTrack++;
-                    if (currentTrack >= playlist.Length) currentTrack = 0; // Loop to first song
-
-                    soundtrackReader?.Dispose();
-                    soundtrackReader = new AudioFileReader(playlist[currentTrack]);
-                    soundtrackPlayer.Init(soundtrackReader);
-                    soundtrackPlayer.Play();
-                };
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed to play soundtrack: " + ex.Message);
-            }
-
 
             sw.Start();
             gameTimer.Reset();
             gameTimer.Start();
+            StartMusic();
 
             try { Console.CursorVisible = false; } catch { }
             Console.OutputEncoding = Encoding.UTF8;
@@ -102,11 +140,7 @@ namespace BrickBreaker.Game
             }
             gameTimer.Stop();
             try { Console.SetCursorPosition(0, H + 1); Console.CursorVisible = true; } catch { }
-            
-            soundtrackPlayer?.Stop();
-            soundtrackReader?.Dispose();
-            soundtrackPlayer?.Dispose();
-
+            StopMusic();
 
             Console.WriteLine($"Game time: {gameTimer.Elapsed:mm\\:ss\\.ff}");
             Console.ForegroundColor = ConsoleColor.Red;
@@ -116,10 +150,64 @@ namespace BrickBreaker.Game
             return score;
         }
 
-        void Init()
+        void InitLevels()
+        {
+            levels.Clear();
+            // Level 1 - all bricks
+            levels.Add(new bool[10, 5]
+            {
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true },
+                { true, true, true, true, true }
+            });
+            // Level 2 - alternate pattern
+            levels.Add(new bool[10, 5]
+            {
+                { true, false, true, false, true },
+                { false, true, false, true, false },
+                { true, false, true, false, true },
+                { false, true, false, true, false },
+                { true, false, true, false, true },
+                { false, true, false, true, false },
+                { true, false, true, false, true },
+                { false, true, false, true, false },
+                { true, false, true, false, true },
+                { false, true, false, true, false }
+            });
+        }
+        void LoadLevel(int levelIndex)
+        {
+            currentLevel = levelIndex;
+            bricks = levels[levelIndex];
+            paddleX = (W - PaddleW) / 2;
+            paddleY = H - 2;
+            ResetBallOnPaddle();
+            // Score/lives are kept
+            hitMultiplier = 0; // Reset multiplier on new level
+            scorePops.Clear(); // Remove any leftover pops on level load
+        }
+
+        void ResetBallOnPaddle()
         {
             balls.Clear();
-            balls.Add(new Ball(W / 2, H / 2, 1, -1)); // Only default ball at start
+            balls.Add(new Ball(paddleX + PaddleW / 2, paddleY - 1, 0, 0));
+            waitingForLaunch = true;
+        }
+
+        void Init()
+        {
+            InitLevels();
+            LoadLevel(0);
+            waitingForLaunch = true;
+            balls.Clear();
+            balls.Add(new Ball(W / 2, H / 2, 1, -1));
 
             paddleX = (W - PaddleW) / 2;
             paddleY = H - 2;
@@ -136,6 +224,8 @@ namespace BrickBreaker.Game
             running = true;
             ballTick = 0;
             score = 0;
+            hitMultiplier = 0;
+            scorePops.Clear();
         }
 
         void Input()
@@ -162,15 +252,25 @@ namespace BrickBreaker.Game
                 paddleX = Math.Min(W - PaddleW - 1, paddleX + speed);
         }
 
+        int powerUpTick = 0;
+
         void Update()
         {
             if (_paused)
                 return;
 
+            // Update score pop-ups (remove expired)
+            for (int i = scorePops.Count - 1; i >= 0; i--)
+            {
+                scorePops[i].Duration--;
+                if (scorePops[i].Duration <= 0)
+                    scorePops.RemoveAt(i);
+            }
+
             ballTick++;
             if (ballTick % 3 != 0) return;
 
-            // Update balls
+            // --- Balls update & collisions ---
             for (int i = balls.Count - 1; i >= 0; i--)
             {
                 var ball = balls[i];
@@ -181,12 +281,22 @@ namespace BrickBreaker.Game
                 int nx = ball.X + dxStep;
                 int ny = ball.Y + ball.Dy;
 
-                // walls (horizontal)
-                if (nx <= 1 || nx >= W - 2) { ball.Vx = -ball.Vx; ball.VxCarry = -ball.VxCarry; dxStep = -dxStep; nx = ball.X + dxStep; }
-                // walls (top)
-                if (ny <= TopMargin) { ball.Dy = -ball.Dy; ny = ball.Y + ball.Dy; }
+                // Walls (horizontal)
+                if (nx <= 1 || nx >= W - 2)
+                {
+                    ball.Vx = -ball.Vx;
+                    ball.VxCarry = -ball.VxCarry;
+                    dxStep = -dxStep;
+                    nx = ball.X + dxStep;
+                }
+                // Walls (top)
+                if (ny <= TopMargin)
+                {
+                    ball.Dy = -ball.Dy;
+                    ny = ball.Y + ball.Dy;
+                }
 
-                // paddle
+                // Paddle
                 if (ball.Dy > 0 && ny >= paddleY && nx >= paddleX && nx < paddleX + PaddleW)
                 {
                     ball.Dy = -ball.Dy;
@@ -194,9 +304,9 @@ namespace BrickBreaker.Game
                     ApplyPaddleBounce(ball, hitPos);
                     dxStep = 0;
                     ny = paddleY - 1;
+                    hitMultiplier = 0; // Reset multiplier
                 }
 
-                // brick collision X-axis
                 // Brick collision X-axis
                 if (nx != ball.X)
                 {
@@ -204,7 +314,13 @@ namespace BrickBreaker.Game
                     if (hitX)
                     {
                         bricks[cx, rx] = false;
-                        score += 10;
+                        hitMultiplier++;
+                        int addedScore = 10 * hitMultiplier;
+                        score += addedScore;
+
+                        int popX = 1 + (cx * (W - 2)) / bricks.GetLength(0);
+                        int popY = TopMargin + 1 + rx;
+                        scorePops.Add(new ScorePop { X = popX, Y = popY, Score = addedScore, Duration = 30 });
                         ball.Vx = -ball.Vx;
                         ball.VxCarry = -ball.VxCarry;
                         dxStep = -dxStep;
@@ -223,7 +339,14 @@ namespace BrickBreaker.Game
                     if (hitY)
                     {
                         bricks[cy, ry] = false;
-                        score += 10;
+                        hitMultiplier++;
+                        int addedScore = 10 * hitMultiplier;
+                        score += addedScore;
+
+                        int popX = 1 + (cy * (W - 2)) / bricks.GetLength(0);
+                        int popY = TopMargin + 1 + ry;
+                        scorePops.Add(new ScorePop { X = popX, Y = popY, Score = addedScore, Duration = 30 });
+
                         ball.Dy = -ball.Dy;
                         ny = ball.Y + ball.Dy;
 
@@ -232,7 +355,6 @@ namespace BrickBreaker.Game
                             powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.MultiBall));
                     }
                 }
-
 
                 ball.X = nx;
                 ball.Y = ny;
@@ -246,10 +368,16 @@ namespace BrickBreaker.Game
             }
 
             UpdatePowerUps();
-            if (AllBricksCleared()) running = false;
-        }
 
-        int powerUpTick = 0;
+            // --- Level progression: check if all bricks cleared ---
+            if (AllBricksCleared())
+            {
+                if (currentLevel + 1 < levels.Count)
+                    LoadLevel(currentLevel + 1);
+                else
+                    running = false;
+            }
+        }
 
         void UpdatePowerUps()
         {
@@ -309,12 +437,11 @@ namespace BrickBreaker.Game
 
         void Render()
         {
-            Console.ResetColor(); // Make sure colors start normal
+            Console.ResetColor();
 
             var sb = new StringBuilder((W + 1) * (H + 1));
             sb.Append('┌'); sb.Append('─', W - 2); sb.Append('┐').Append('\n');
 
-            // Loop through all rows (y)
             for (int y = 1; y < H - 1; y++)
             {
                 sb.Append('│');
@@ -322,7 +449,6 @@ namespace BrickBreaker.Game
                 {
                     char ch = ' ';
 
-                    // bricks
                     int cols = bricks.GetLength(0), rows = bricks.GetLength(1);
                     int brickTop = TopMargin + 1, brickBottom = TopMargin + 1 + rows;
                     if (y >= brickTop && y < brickBottom)
@@ -332,22 +458,19 @@ namespace BrickBreaker.Game
                         if (bricks[c, r]) ch = '█';
                     }
 
-                    // paddle
                     if (y == paddleY && x >= paddleX && x < paddleX + PaddleW) ch = '█';
 
-                    // ball
                     foreach (var ball in balls)
                     {
                         if (x == ball.X && y == ball.Y)
                             ch = ball.IsMultiball ? '*' : '●';
                     }
 
-                    // power-up
                     foreach (var pu in powerUps)
                     {
                         if (x == pu.X && y == pu.Y)
                         {
-                            ch = 'M'; // Visible power-up 
+                            ch = 'M';
                         }
                     }
 
@@ -358,6 +481,20 @@ namespace BrickBreaker.Game
             sb.Append('└'); sb.Append('─', W - 2); sb.Append('┘');
             Console.SetCursorPosition(0, 0);
             Console.Write(sb.ToString());
+
+            // --- Render score pop-ups ---
+            foreach (var pop in scorePops)
+            {
+                try
+                {
+                    Console.SetCursorPosition(pop.X, pop.Y);
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write($"+{pop.Score}");
+                    Console.ResetColor();
+                }
+                catch { }
+            }
+
             if (_paused)
             {
                 Console.SetCursorPosition(W / 2 - 3, 0);
