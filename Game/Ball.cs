@@ -10,8 +10,8 @@
         public double Vx, VxCarry;
         public int Dy;
         public int Size = 1;
-        public BallColor Color = BallColor.Default;
-        public int BigBallTicks = 0; // counts how many update ticks left for big ball effect
+
+
 
 
         public Ball(int x, int y, double vx, int dy)
