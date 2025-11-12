@@ -77,7 +77,7 @@ namespace BrickBreaker.Game
         void Init()
         {
             balls.Clear();
-            balls.Add(new Ball(W / 2, H / 2, 1, -1)); // Make sure this line is here
+            balls.Add(new Ball(W / 2, H / 2, 1, -1)); // Only default ball at start
 
             paddleX = (W - PaddleW) / 2;
             paddleY = H - 2;
@@ -155,6 +155,7 @@ namespace BrickBreaker.Game
                 }
 
                 // brick collision X-axis
+                // Brick collision X-axis
                 if (nx != ball.X)
                 {
                     var (hitX, cx, rx) = BrickAt(nx, ball.Y);
@@ -167,18 +168,13 @@ namespace BrickBreaker.Game
                         dxStep = -dxStep;
                         nx = ball.X + dxStep;
 
+                        // 50% chance to spawn MultiBall power-up
                         if (random.NextDouble() < 0.5)
-                            powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.MultiBall)); // most common
-                        //////if (random.NextDouble() < 10)
-                        ////    //powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.BigBall)); // less common
-                        //////if (random.NextDouble() < 10)
-                        ////  //  powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.FastBall)); // rare
-                        //////if (random.NextDouble() < 5)
-                        ////    powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.RainbowBall)); // very rare
-
+                            powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.MultiBall));
                     }
                 }
-                // brick collision Y-axis
+
+                // Brick collision Y-axis
                 if (ny != ball.Y)
                 {
                     var (hitY, cy, ry) = BrickAt(nx, ny);
@@ -189,16 +185,17 @@ namespace BrickBreaker.Game
                         ball.Dy = -ball.Dy;
                         ny = ball.Y + ball.Dy;
 
+                        // 50% chance to spawn MultiBall power-up
                         if (random.NextDouble() < 0.5)
                             powerUps.Add(new PowerUp(nx, ball.Y, PowerUpType.MultiBall));
                     }
                 }
 
+
                 ball.X = nx;
                 ball.Y = ny;
                 if (ball.Y >= H - 1) balls.RemoveAt(i);
             }
-
 
             if (balls.Count == 0)
             {
@@ -208,7 +205,6 @@ namespace BrickBreaker.Game
 
             UpdatePowerUps();
             if (AllBricksCleared()) running = false;
-
         }
 
         int powerUpTick = 0;
@@ -216,7 +212,7 @@ namespace BrickBreaker.Game
         void UpdatePowerUps()
         {
             powerUpTick++;
-            if (powerUpTick % 3 != 0) return; // only update every 3 game ticks
+            if (powerUpTick % 3 != 0) return;
 
             for (int i = powerUps.Count - 1; i >= 0; i--)
             {
@@ -233,7 +229,6 @@ namespace BrickBreaker.Game
                 }
             }
         }
-
 
         (bool hit, int c, int r) BrickAt(int x, int y)
         {
@@ -272,8 +267,12 @@ namespace BrickBreaker.Game
 
         void Render()
         {
+            Console.ResetColor(); // Make sure colors start normal
+
             var sb = new StringBuilder((W + 1) * (H + 1));
             sb.Append('┌'); sb.Append('─', W - 2); sb.Append('┐').Append('\n');
+
+            // Loop through all rows (y)
             for (int y = 1; y < H - 1; y++)
             {
                 sb.Append('│');
@@ -295,7 +294,21 @@ namespace BrickBreaker.Game
                     if (y == paddleY && x >= paddleX && x < paddleX + PaddleW) ch = '█';
 
                     // ball
-                    if (x == ballX && y == ballY) ch = '●';
+                    foreach (var ball in balls)
+                    {
+                        if (x == ball.X && y == ball.Y)
+                            ch = ball.IsMultiball ? '*' : '●';
+                    }
+
+                    // power-up
+                    foreach (var pu in powerUps)
+                    {
+                        if (x == pu.X && y == pu.Y)
+                        {
+                            ch = 'M'; // Visible power-up
+                        }
+                    }
+
                     sb.Append(ch);
                 }
                 sb.Append('│').Append('\n');
@@ -313,3 +326,4 @@ namespace BrickBreaker.Game
         }
     }
 }
+
