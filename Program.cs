@@ -26,19 +26,13 @@ class Program
 
     static void Main()
     {
-        var projectRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".."));
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(projectRoot)
-            .AddJsonFile("Properties/appsettings.json", optional: false, reloadOnChange: true)
-            .Build();
+        var paths = new FilePathProvider();
 
-        string userFilePath = Path.Combine(projectRoot, configuration["FilePaths:UserPath"]!);
-        string leaderboardFilePath = Path.Combine(projectRoot, configuration["FilePaths:LeaderboardPath"]!);
-        // Initialize storage/logic once
-        var userStore = new UserStore(userFilePath);
+        var userStore = new UserStore(paths.GetUserPath());
         _auth = new Auth(userStore);
+        // Initialize storage/logic once
 
-        _lbStore = new LeaderboardStore(leaderboardFilePath);
+        _lbStore = new LeaderboardStore(paths.GetLeaderboardPath());
         _lb = new Leaderboard(_lbStore);
 
 
