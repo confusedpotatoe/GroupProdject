@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections.Generic;
 using BrickBreaker.Game;
 using BrickBreaker.Logics;
+using NAudio.Wave;
 
 namespace BrickBreaker.Game
 {
@@ -12,6 +13,17 @@ namespace BrickBreaker.Game
     {
         bool _paused = false;
         bool _prevSpaceDown = false;
+
+        private IWavePlayer? soundtrackPlayer;
+        private AudioFileReader? soundtrackReader;
+
+        // Playlist array
+        string[] playlist = new string[]
+        {
+    "Assets/Sounds/Backbeat.mp3",   // Your first song
+    "Assets/Sounds/Arpent.mp3"      // Your second song
+        };
+        int currentTrack = 0;
 
         private Stopwatch gameTimer = new Stopwatch();
 
@@ -38,6 +50,31 @@ namespace BrickBreaker.Game
             var targetDt = TimeSpan.FromMilliseconds(33);
 
             Init();
+
+            try
+            {
+                soundtrackReader = new AudioFileReader(playlist[currentTrack]);
+                soundtrackPlayer = new WaveOutEvent();
+                soundtrackPlayer.Init(soundtrackReader);
+                soundtrackPlayer.Play();
+
+                // Handler: go to next song after one finishes
+                soundtrackPlayer.PlaybackStopped += (s, e) =>
+                {
+                    currentTrack++;
+                    if (currentTrack >= playlist.Length) currentTrack = 0; // Loop to first song
+
+                    soundtrackReader?.Dispose();
+                    soundtrackReader = new AudioFileReader(playlist[currentTrack]);
+                    soundtrackPlayer.Init(soundtrackReader);
+                    soundtrackPlayer.Play();
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to play soundtrack: " + ex.Message);
+            }
+
 
             sw.Start();
             gameTimer.Reset();
@@ -69,6 +106,10 @@ namespace BrickBreaker.Game
             Console.SetCursorPosition(W / 2 - 5, H / 2);
             Console.Write("GAME OVER!");
             Console.ResetColor();
+            soundtrackPlayer?.Stop();
+            soundtrackReader?.Dispose();
+            soundtrackPlayer?.Dispose();
+
 
             Console.WriteLine($"Game time: {gameTimer.Elapsed:mm\\:ss\\.ff}");
             return score;
