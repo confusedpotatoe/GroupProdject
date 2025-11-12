@@ -1,4 +1,6 @@
 // Program.cs — minimal, runnable, with Auth/Leaderboard singletons and UI split points
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
 
 using System.Runtime.InteropServices;
 using BrickBreaker.Game;
@@ -12,10 +14,8 @@ enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
 class Program
 {
     static string? currentUser = null;
-
-    // Singletons for the whole app
-    static readonly LeaderboardStore _lbStore = new("data/leaderboard.json");
-    static readonly Leaderboard _lb = new(_lbStore);
+    private static LeaderboardStore _lbStore;
+    private static Leaderboard _lb;
 
     static Auth _auth = null!; // set in Main
 
@@ -26,8 +26,16 @@ class Program
 
     static void Main()
     {
+        var paths = new FilePathProvider();
+
+        var userStore = new UserStore(paths.GetUserPath());
+        _auth = new Auth(userStore);
         // Initialize storage/logic once
-        var userStore = new UserStore("data/users.json");
+
+        _lbStore = new LeaderboardStore(paths.GetLeaderboardPath());
+        _lb = new Leaderboard(_lbStore);
+
+
         _auth = new Auth(userStore);
 
         AppState state = AppState.LoginMenu;
