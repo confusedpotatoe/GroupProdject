@@ -305,7 +305,7 @@ namespace BrickBreaker.Game
                     {
                         if (x == pu.X && y == pu.Y)
                         {
-                            ch = 'M'; // Visible power-up
+                            ch = 'M'; // Visible power-up 
                         }
                     }
 
