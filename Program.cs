@@ -22,6 +22,7 @@ class Program
     // UI (console implementations for now)
     static ILoginMenu _loginMenu = new ConsoleLoginMenu();
     static IGameplayMenu _gameplayMenu = new ConsoleGameplayMenu();
+    static IConsoleDialogs _dialogs = new ConsoleDialogs();
 
     static void Main()
     {
@@ -46,11 +47,10 @@ class Program
                 case AppState.Playing:
                     IGame game = new BrickBreakerGame();
                     int score = game.Run();
-                    Console.WriteLine($"\nFinal score: {score}");
-
+                    _dialogs.ShowMessage($"\nFinal score: {score}");
                     _lb.Submit(currentUser ?? "guest", score);
+                    _dialogs.Pause();
 
-                    Pause();
                     state = currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
                     break;
             }
@@ -66,17 +66,17 @@ class Program
         {
             case LoginMenuChoice.Register:
                 DoRegister();
-                Pause();
+                _dialogs.Pause();
                 return AppState.LoginMenu;
 
             case LoginMenuChoice.Login:
                 if (DoLogin()) return AppState.GameplayMenu;
-                Pause();
+                _dialogs.Pause();
                 return AppState.LoginMenu;
 
             case LoginMenuChoice.Leaderboard:
                 ShowLeaderboard();
-                Pause();
+                _dialogs.Pause();
                 return AppState.LoginMenu;
 
             case LoginMenuChoice.Exit:
@@ -92,6 +92,8 @@ class Program
         ClearInputBuffer();
         var choice = _gameplayMenu.Show(currentUser ?? "guest");
 
+
+
         switch (choice)
         {
             case GameplayMenuChoice.Start:
@@ -99,13 +101,13 @@ class Program
 
             case GameplayMenuChoice.Best:
                 // TODO: _lb.BestFor(currentUser!)
-                Console.WriteLine("\n[TODO] Show your best score via Leaderboard.BestFor(username).");
-                Pause();
+                _dialogs.ShowMessage("\n[TODO] Show your best score via Leaderboard.BestFor(username).");
+                _dialogs.Pause();
                 return AppState.GameplayMenu;
 
             case GameplayMenuChoice.Leaderboard:
                 ShowLeaderboard();
-                Pause();
+                _dialogs.Pause();
                 return AppState.GameplayMenu;
 
             case GameplayMenuChoice.Logout:
@@ -119,15 +121,13 @@ class Program
 
     static void DoRegister()
     {
-        Console.Write("\nChoose a username: ");
-        var username = Console.ReadLine();
-
-        Console.Write("Choose a password: ");
-        var password = Console.ReadLine();
+        var username = _dialogs.PromptNewUsername();
+        var password = _dialogs.PromptNewPassword();
 
         bool ok = _auth.Register(username, password);
-        Console.WriteLine(ok ? "Registration successful! You can now log in." :
-                               "Registration failed (empty or already exists).");
+        _dialogs.ShowMessage(ok
+            ? "Registration successful! You can now log in."
+            : "Registration failed (empty or already exists).");
     }
 
     static bool DoLogin()
@@ -141,29 +141,36 @@ class Program
 
         if (_auth.Login(username, password))
         {
-            currentUser = (username ?? "").Trim();
+            currentUser = username;
             return true;
         }
 
-        Console.WriteLine("Login failed (wrong username or password).");
+        _dialogs.ShowMessage("Login failed (wrong username or password).");
         return false;
     }
 
     static void ShowLeaderboard()
     {
-        Console.WriteLine("\nTop 10 leaderboard:");
         var top = _lb.Top(10);
         if (top.Count == 0)
         {
-            Console.WriteLine("No scores yet.");
+            _dialogs.ShowMessage("\nTop 10 leaderboard:\nNo scores yet.");
             return;
         }
-        int i = 1;
-        foreach (var s in top)
-            Console.WriteLine($"{i++}. {s.Username}  {s.Score}  {s.At:yyyy-MM-dd HH:mm}");
+        var items = top.Select(s => (s.Username, s.Score, s.At));
+        _dialogs.ShowLeaderboard(items);
     }
 
-    static void Pause()
+    //  Input buffer helper
+    const int STD_INPUT_HANDLE = -10;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern IntPtr GetStdHandle(int nStdHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool FlushConsoleInputBuffer(IntPtr hConsoleInput);
+
+    static void ClearInputBuffer()
     {
         ClearInputBuffer();
         Console.WriteLine("\nPress Enter to continue...");
