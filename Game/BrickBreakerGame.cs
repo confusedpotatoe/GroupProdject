@@ -294,56 +294,8 @@ namespace BrickBreaker.Game
                     // paddle
                     if (y == paddleY && x >= paddleX && x < paddleX + PaddleW) ch = '█';
 
-                    // balls
-
-                    foreach (var ball in balls)
-                    {
-                        if (x == ball.X && y == ball.Y)
-                            ch = '●'; // The symbol for a ball
-                    }
-
-                    //foreach (var ball in balls)
-                    //{
-                    //    if (x == ball.X && y == ball.Y)
-                    //    {
-                    //        if (ball.Color == BallColor.Rainbow)
-                    //            ch = '@';
-                    //        else
-                    //            ch = ball.Size == 2 ? 'O' : '●';
-                    //    }
-                    //    if (ball.BigBallTicks > 0)
-                    //    {
-                    //        ball.BigBallTicks--;
-                    //        if (ball.BigBallTicks == 0)
-                    //            ball.Size = 1; // Return to normal
-                    //    }
-                    //}
-
-
-
-                    // power-ups
-                    foreach (var pu in powerUps)
-                    {
-                        if (x == pu.X && y == pu.Y)
-                        {
-                            switch (pu.Type)
-                            {
-                                case PowerUpType.MultiBall:
-                                    ch = '*'; break;
-                                //case PowerUpType.BigBall:
-                                //        ch = '0';
-                                //    break;
-
-                                //case PowerUpType.FastBall:
-                                //    ch = '>'; break;
-                                //case PowerUpType.RainbowBall:
-                                //    ch = '@'; break;
-
-                            }
-                        }
-                    }
-
-
+                    // ball
+                    if (x == ballX && y == ballY) ch = '●';
                     sb.Append(ch);
                 }
                 sb.Append('│').Append('\n');
