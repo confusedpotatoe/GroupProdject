@@ -8,21 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\Sounds\Backbeat.mp3" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <Page Include="Assets\Sounds\Backbeat.mp3">
+    <None Update="Assets\Sounds\Arpent.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Page>
-  </ItemGroup>
-
-  <ItemGroup>
+    </None>
+    <None Update="Assets\Sounds\Backbeat.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="data\users.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
