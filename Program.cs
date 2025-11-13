@@ -110,9 +110,7 @@ class Program
                 return AppState.Playing;
 
             case GameplayMenuChoice.Best:
-                // TODO: _lb.BestFor(currentUser!)
-                _dialogs.ShowMessage("\n[TODO] Show your best score via Leaderboard.BestFor(username).");
-                _dialogs.Pause();
+                ShowBestScore();    
                 return AppState.GameplayMenu;
 
             case GameplayMenuChoice.Leaderboard:
@@ -191,4 +189,24 @@ class Program
             // ignored: console might not be Windows or handle unavailable
         }
     }
+
+    // Shows the current user's highest score
+    static void ShowBestScore()
+    {
+        var best = _lb.BestFor(currentUser!);
+
+        if (best == null)
+        {
+            _dialogs.ShowMessage("\nNo scores recorded yet.");
+        }
+        else
+        {
+            _dialogs.ShowMessage(
+                $"\nYour best score: {best.Score} on {best.At:yyyy-MM-dd HH:mm}"
+            );
+        }
+
+        _dialogs.Pause();
+    }
+
 }

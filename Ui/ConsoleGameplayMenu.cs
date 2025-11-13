@@ -13,7 +13,7 @@ namespace BrickBreaker.Ui
             Console.Clear();
             Console.WriteLine($"=== Gameplay Menu (user: {currentUser}) ===");
             Console.WriteLine("1) Start");
-            Console.WriteLine("2) High Score (your best) (TODO: Leaderboard.BestFor)");
+            Console.WriteLine("2) High Score (your best)");
             Console.WriteLine("3) Leaderboard (top 10)");
             Console.WriteLine("4) Logout");
 
