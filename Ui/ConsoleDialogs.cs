@@ -4,48 +4,51 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
-    namespace BrickBreaker.Ui
+namespace BrickBreaker.Ui
+{
+    public class ConsoleDialogs : IConsoleDialogs
     {
-        public class ConsoleDialogs : IConsoleDialogs
+        public (string Username, string Password) PromptCredentials()
         {
-            public (string Username, string Password) PromptCredentials()
-            {
-                Console.Write("Username: ");
-                var u = Console.ReadLine()?.Trim() ?? "";
-                Console.Write("Password: ");
-                var p = Console.ReadLine()?.Trim() ?? "";
-                return (u, p);
-            }
+            Console.Write("Username: ");
+            var u = Console.ReadLine()?.Trim() ?? "";
+            Console.Write("Password: ");
+            var p = Console.ReadLine()?.Trim() ?? "";
+            return (u, p);
+        }
 
-            public string PromptNewUsername()
-            {
-                Console.Write("\nChoose a username: ");
-                return Console.ReadLine()?.Trim() ?? "";
-            }
+        public string PromptNewUsername()
+        {
+            Console.Write("\nChoose a username: ");
+            return Console.ReadLine()?.Trim() ?? "";
+        }
 
-            public string PromptNewPassword()
-            {
-                Console.Write("Choose a password: ");
-                return Console.ReadLine()?.Trim() ?? "";
-            }
+        public string PromptNewPassword()
+        {
+            Console.Write("Choose a password: ");
+            return Console.ReadLine()?.Trim() ?? "";
+        }
 
-            public void ShowMessage(string message) => Console.WriteLine(message);
+        public void ShowMessage(string message) => Console.WriteLine(message);
 
-            public void Pause()
-            {
-                Console.WriteLine("\nPress any key...");
-                Console.ReadKey(true);
-            }
+        public void Pause()
+        {
+            Console.WriteLine("\nPress any key...");
+            Console.ReadKey(true);
+        }
 
-            public void ShowLeaderboard(System.Collections.Generic.IEnumerable<(string Username, int Score, DateTimeOffset At)> entries)
+        public void ShowLeaderboard(System.Collections.Generic.IEnumerable<(string Username, int Score, DateTimeOffset At)> entries)
+        {
+            Console.WriteLine("\nTop 10 leaderboard:");
+            int i = 1;
+            foreach (var e in entries)
             {
-                Console.WriteLine("\nTop 10 leaderboard:");
-                int i = 1;
-                foreach (var e in entries)
-                    Console.WriteLine($"{i++}. {e.Username}  {e.Score}  {e.At:yyyy-MM-dd HH:mm}");
+                // Convert stored timestamp to the local timezone for display
+                var localAt = e.At.ToLocalTime();
+                Console.WriteLine($"{i++}. {e.Username}  {e.Score}  {localAt:yyyy-MM-dd HH:mm}");
             }
         }
     }
+}
 
 

@@ -1,7 +1,3 @@
-// Program.cs — minimal, runnable, with Auth/Leaderboard singletons and UI split points
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
-
 using System.Runtime.InteropServices;
 using BrickBreaker.Game;
 using BrickBreaker.Logic;
@@ -201,8 +197,9 @@ class Program
         }
         else
         {
+            // Convert stored UTC to the local time zone for display
             _dialogs.ShowMessage(
-                $"\nYour best score: {best.Score} on {best.At:yyyy-MM-dd HH:mm}"
+                $"\nYour best score: {best.Score} on {best.At.ToLocalTime():yyyy-MM-dd HH:mm}"
             );
         }
 

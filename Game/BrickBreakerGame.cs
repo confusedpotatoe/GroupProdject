@@ -288,7 +288,7 @@ namespace BrickBreaker.Game
             }
 
             ballTick++;
-            if (ballTick % 4 != 0) return;
+            if (ballTick % 3 != 0) return; // ball speed updat every 3rd frame
 
             // --- Balls update & collisions ---
             for (int i = balls.Count - 1; i >= 0; i--)
