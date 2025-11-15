@@ -9,12 +9,11 @@ namespace BrickBreaker.UI.Ui
 {
     public static class MenuHelper
     {
-        /// <summary>
-        /// Show any menu based on an enum and return the selected enum value.
-        /// </summary>
         public static T ShowMenu<T>(string title) where T : Enum
         {
+            // Convert enum values to string list for Spectre console
             var options = Enum.GetNames(typeof(T));
+
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title($"[yellow]{title}[/]")
