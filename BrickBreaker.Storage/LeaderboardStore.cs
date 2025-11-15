@@ -1,9 +1,10 @@
-﻿using BrickBreaker.Models;
+﻿using BrickBreaker.Logic.Abstractions;
+using BrickBreaker.Models;
 using System.Text.Json;
 
-namespace BrickBreaker.Storage; //namespace MISSING i think that did the big part, but some other changes aswell
+namespace BrickBreaker.Storage;
 
-public sealed class LeaderboardStore
+public sealed class LeaderboardStore : ILeaderboardStore
 {
     private readonly string _path;
 

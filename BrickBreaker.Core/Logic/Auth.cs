@@ -1,12 +1,12 @@
-﻿using BrickBreaker.Models;
-using BrickBreaker.Storage;
+﻿using BrickBreaker.Logic.Abstractions;
+using BrickBreaker.Models;
 
 namespace BrickBreaker.Logic;
 
 public sealed class Auth
 {
-    private readonly UserStore _users;
-    public Auth(UserStore users) => _users = users;
+    private readonly IUserStore _users;
+    public Auth(IUserStore users) => _users = users;
 
     public bool Register(string username, string password)
     {

@@ -1,9 +1,10 @@
+using BrickBreaker.Logic.Abstractions;
 using BrickBreaker.Models;
 using System.Text.Json;
 
 namespace BrickBreaker.Storage;
 
-public sealed class UserStore
+public sealed class UserStore : IUserStore
 {
 
     private readonly string _path;

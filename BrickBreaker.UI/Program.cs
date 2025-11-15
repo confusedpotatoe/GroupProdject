@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using BrickBreaker.Game;
 using BrickBreaker.Logic;
-using BrickBreaker.Models;
 using BrickBreaker.Storage;
 using BrickBreaker.Ui;
 
@@ -10,10 +9,8 @@ enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
 class Program
 {
     static string? currentUser = null;
-    private static LeaderboardStore _lbStore;
-    private static Leaderboard _lb;
-
-    static Auth _auth = null!; // set in Main
+    private static Leaderboard _lb = null!;
+    private static Auth _auth = null!;
 
     // UI (console implementations for now)
     static ILoginMenu _loginMenu = new ConsoleLoginMenu();
@@ -25,13 +22,8 @@ class Program
         var paths = new FilePathProvider();
 
         var userStore = new UserStore(paths.GetUserPath());
-        _auth = new Auth(userStore);
-        // Initialize storage/logic once
-
-        _lbStore = new LeaderboardStore(paths.GetLeaderboardPath());
-        _lb = new Leaderboard(_lbStore);
-
-
+        var leaderboardStore = new LeaderboardStore(paths.GetLeaderboardPath());
+        _lb = new Leaderboard(leaderboardStore);
         _auth = new Auth(userStore);
 
         AppState state = AppState.LoginMenu;

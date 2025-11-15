@@ -1,13 +1,12 @@
+using BrickBreaker.Logic.Abstractions;
 using BrickBreaker.Models;
-using BrickBreaker.Storage;
-
 
 namespace BrickBreaker.Logic;
 
 public sealed class Leaderboard
 {
-    private readonly LeaderboardStore _store;
-    public Leaderboard(LeaderboardStore store) => _store = store;
+    private readonly ILeaderboardStore _store;
+    public Leaderboard(ILeaderboardStore store) => _store = store;
 
     public void Submit(ScoreEntry entry)
     {
@@ -43,10 +42,4 @@ public sealed class Leaderboard
             .ThenBy(s => s.Username, StringComparer.OrdinalIgnoreCase)
             .FirstOrDefault();
     }
-
 }
-
-
-
-
-
