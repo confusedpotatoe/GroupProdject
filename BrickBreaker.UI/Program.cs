@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 class Program
 {
-    static string? currentUser = null;
+    static string? currentUser = null ;
     private static Leaderboard _lb = null!;
     private static Auth _auth = null!;
 
@@ -32,21 +32,13 @@ class Program
 
         while (state != AppState.Exit)
         {
-            switch (state)
+            state = state switch
             {
-                case AppState.LoginMenu:
-                    state = HandleLoginMenu();
-                    break;
-                case AppState.GameplayMenu:
-                    state = HandleGameplayMenu();
-                    break;
-                case AppState.Playing:
-                    state = HandlePlaying();
-                    break;
-                default:
-                    state = AppState.Exit;
-                    break;
-            }
+                AppState.LoginMenu => HandleLoginMenu(),
+                AppState.GameplayMenu => HandleGameplayMenu(),
+                AppState.Playing => HandlePlaying(),
+                _ => AppState.Exit
+            };
         }
     }
 

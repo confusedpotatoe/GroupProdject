@@ -11,6 +11,7 @@ namespace BrickBreaker.UI.Ui.Enums
         Start,
         Best,
         Leaderboard,
-        Logout
+        Logout,
+        Exit,
     }
 }

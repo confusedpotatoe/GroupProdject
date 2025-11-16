@@ -12,7 +12,6 @@ namespace BrickBreaker.UI.Ui.Enums
         LoginMenu,
         GameplayMenu,
         Playing,
-        Leaderboard,
         Exit
     }
 }

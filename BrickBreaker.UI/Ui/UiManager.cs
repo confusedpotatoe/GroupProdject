@@ -13,6 +13,8 @@ namespace BrickBreaker.UI.Ui
         private readonly LoginMenu _loginMenu = new LoginMenu();
         private readonly GameplayMenu _gameplayMenu = new GameplayMenu();
 
+        private string? currentUser = null;
+
         public void Run()
         {
             AppState state = AppState.LoginMenu;
@@ -34,8 +36,7 @@ namespace BrickBreaker.UI.Ui
 
             return choice switch
             {
-                LoginMenuChoice.QuickPlay => AppState.GameplayMenu,
-                LoginMenuChoice.Login => AppState.GameplayMenu,
+                LoginMenuChoice.Login => AppState.LoginMenu,
                 LoginMenuChoice.Register => AppState.LoginMenu,
                 LoginMenuChoice.Leaderboard => AppState.LoginMenu,
                 LoginMenuChoice.Exit => AppState.Exit,
@@ -50,11 +51,12 @@ namespace BrickBreaker.UI.Ui
             return choice switch
             {
                 GameplayMenuChoice.Start => AppState.Playing,
-                GameplayMenuChoice.Best => { ShowBestScore(); return AppState.GameplayMenu;},
-                GameplayMenuChoice.Leaderboard => { ShowLeaderboard(); return AppState.GameplayMenu;},
-                GameplayMenuChoice.Logout => { currentUser = null; return AppState.LoginMenu; },
-                _ => AppState.GameplayMenuChoice
+                GameplayMenuChoice.Best => AppState.GameplayMenu,
+                GameplayMenuChoice.Logout => AppState.LoginMenu,
+                GameplayMenuChoice.Exit => AppState.Exit,
+                _ => AppState.GameplayMenu
             };
         }
     }
 }
+ 
