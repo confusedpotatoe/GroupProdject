@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BrickBreaker.Ui
+/*namespace BrickBreaker.UI.Ui.ConsoleMenu
 {
     public class ConsoleGameplayMenu : IGameplayMenu
     {
@@ -54,3 +54,4 @@ namespace BrickBreaker.Ui
         }
     }
 }
+*/

@@ -1,28 +1,30 @@
-using System.Runtime.InteropServices;
 using BrickBreaker.Game;
 using BrickBreaker.Logic;
 using BrickBreaker.Storage;
 using BrickBreaker.Ui;
-
-enum AppState { LoginMenu, GameplayMenu, Playing, Exit }
+using BrickBreaker.UI.Ui.Enums;
+using BrickBreaker.UI.Ui.Interfaces;
+using BrickBreaker.UI.Ui.SpecterConsole;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 class Program
 {
-    static string? currentUser = null;
+    static string? currentUser = null ;
     private static Leaderboard _lb = null!;
     private static Auth _auth = null!;
 
-    // UI (console implementations for now)
-    static ILoginMenu _loginMenu = new ConsoleLoginMenu();
-    static IGameplayMenu _gameplayMenu = new ConsoleGameplayMenu();
+    // UI menus and dialogs
+    static ILoginMenu _loginMenu = new LoginMenu();
+    static IGameplayMenu _gameplayMenu = new GameplayMenu();
     static IConsoleDialogs _dialogs = new ConsoleDialogs();
 
     static void Main()
     {
         var paths = new FilePathProvider();
-
         var userStore = new UserStore(paths.GetUserPath());
         var leaderboardStore = new LeaderboardStore(paths.GetLeaderboardPath());
+
         _lb = new Leaderboard(leaderboardStore);
         _auth = new Auth(userStore);
 
@@ -30,34 +32,21 @@ class Program
 
         while (state != AppState.Exit)
         {
-            switch (state)
+            state = state switch
             {
-                case AppState.LoginMenu:
-                    state = HandleLoginMenu();
-                    break;
-
-                case AppState.GameplayMenu:
-                    state = HandleGameplayMenu();
-                    break;
-
-                case AppState.Playing:
-                    IGame game = new BrickBreakerGame();
-                    int score = game.Run();
-                    int lowerLine = Console.WindowHeight - 4; // a few lines from bottom
-                    Console.SetCursorPosition(0, lowerLine);
-                    _dialogs.ShowMessage($"\nFinal score: {score}");
-                    _lb.Submit(currentUser ?? "guest", score);
-                    _dialogs.Pause();
-
-                    state = currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
-                    break;
-            }
+                AppState.LoginMenu => HandleLoginMenu(),
+                AppState.GameplayMenu => HandleGameplayMenu(),
+                AppState.Playing => HandlePlaying(),
+                _ => AppState.Exit
+            };
         }
     }
 
+    // =========================
+    // Login Menu Handler
+    // =========================
     static AppState HandleLoginMenu()
     {
-        ClearInputBuffer();
         var choice = _loginMenu.Show();
 
         switch (choice)
@@ -68,9 +57,7 @@ class Program
                 return AppState.LoginMenu;
 
             case LoginMenuChoice.Login:
-                if (DoLogin()) return AppState.GameplayMenu;
-                _dialogs.Pause();
-                return AppState.LoginMenu;
+                return DoLogin() ? AppState.GameplayMenu : AppState.LoginMenu;
 
             case LoginMenuChoice.Leaderboard:
                 ShowLeaderboard();
@@ -85,12 +72,12 @@ class Program
         }
     }
 
+    // =========================
+    // Gameplay Menu Handler
+    // =========================
     static AppState HandleGameplayMenu()
     {
-        ClearInputBuffer();
-        var choice = _gameplayMenu.Show(currentUser ?? "guest");
-
-
+        GameplayMenuChoice choice = _gameplayMenu.Show(currentUser ?? "guest");
 
         switch (choice)
         {
@@ -98,7 +85,7 @@ class Program
                 return AppState.Playing;
 
             case GameplayMenuChoice.Best:
-                ShowBestScore();    
+                ShowBestScore();
                 return AppState.GameplayMenu;
 
             case GameplayMenuChoice.Leaderboard:
@@ -115,6 +102,27 @@ class Program
         }
     }
 
+    // =========================
+    // Playing Handler
+    // =========================
+    static AppState HandlePlaying()
+    {
+        IGame game = new BrickBreakerGame();
+        int score = game.Run();
+
+        int lowerLine = Console.WindowHeight - 4;
+        Console.SetCursorPosition(0, lowerLine);
+
+        _dialogs.ShowMessage($"\nFinal score: {score}");
+        _lb.Submit(currentUser ?? "guest", score);
+        _dialogs.Pause();
+
+        return currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
+    }
+
+    // =========================
+    // Helper methods
+    // =========================
     static void DoRegister()
     {
         var username = _dialogs.PromptNewUsername();
@@ -143,16 +151,37 @@ class Program
     static void ShowLeaderboard()
     {
         var top = _lb.Top(10);
-        if (top.Count == 0)
+        if (!top.Any())
         {
             _dialogs.ShowMessage("\nTop 10 leaderboard:\nNo scores yet.");
             return;
         }
+
         var items = top.Select(s => (s.Username, s.Score, s.At));
         _dialogs.ShowLeaderboard(items);
     }
 
-    //  Input buffer helper
+    static void ShowBestScore()
+    {
+        var best = _lb.BestFor(currentUser!);
+
+        if (best == null)
+        {
+            _dialogs.ShowMessage("\nNo scores recorded yet.");
+        }
+        else
+        {
+            _dialogs.ShowMessage(
+                $"\nYour best score: {best.Score} on {best.At.ToLocalTime():yyyy-MM-dd HH:mm}"
+            );
+        }
+
+        _dialogs.Pause();
+    }
+
+    // =========================
+    // Input buffer helper
+    // =========================
     const int STD_INPUT_HANDLE = -10;
 
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -177,25 +206,4 @@ class Program
             // ignored: console might not be Windows or handle unavailable
         }
     }
-
-    // Shows the current user's highest score
-    static void ShowBestScore()
-    {
-        var best = _lb.BestFor(currentUser!);
-
-        if (best == null)
-        {
-            _dialogs.ShowMessage("\nNo scores recorded yet.");
-        }
-        else
-        {
-            // Convert stored UTC to the local time zone for display
-            _dialogs.ShowMessage(
-                $"\nYour best score: {best.Score} on {best.At.ToLocalTime():yyyy-MM-dd HH:mm}"
-            );
-        }
-
-        _dialogs.Pause();
-    }
-
 }

@@ -4,13 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BrickBreaker.Ui
+namespace BrickBreaker.UI.Ui.Enums
 {
     public enum GameplayMenuChoice
     {
         Start,
         Best,
         Leaderboard,
-        Logout
+        Logout,
+        Exit,
     }
 }

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-    namespace BrickBreaker.Ui
+namespace BrickBreaker.UI.Ui.Interfaces
     {
    
             public interface IConsoleDialogs
@@ -17,7 +17,7 @@ using System.Threading.Tasks;
                 void ShowMessage(string message);
                 void Pause();
 
-                void ShowLeaderboard(System.Collections.Generic.IEnumerable<(string Username, int Score, System.DateTimeOffset At)> entries);
+                void ShowLeaderboard(IEnumerable<(string Username, int Score, DateTimeOffset At)> entries);
             }
         }
 

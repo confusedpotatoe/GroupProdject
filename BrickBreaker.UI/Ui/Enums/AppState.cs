@@ -4,10 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BrickBreaker.Ui
+
+namespace BrickBreaker.UI.Ui.Enums
 {
-    public interface IGameplayMenu
+    public enum AppState
     {
-        GameplayMenuChoice Show(string currentUser);
+        LoginMenu,
+        GameplayMenu,
+        Playing,
+        Exit
     }
 }

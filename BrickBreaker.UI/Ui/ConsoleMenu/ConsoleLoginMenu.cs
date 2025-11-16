@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-        namespace BrickBreaker.Ui
+/*namespace BrickBreaker.UI.Ui.ConsoleMenu
         {
             public class ConsoleLoginMenu : ILoginMenu
             {
@@ -55,4 +55,4 @@ using System.Threading.Tasks;
                         Console.ReadKey(true);
                 }
             }
-        }
+        }*/
