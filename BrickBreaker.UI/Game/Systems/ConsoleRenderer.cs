@@ -16,6 +16,7 @@ namespace BrickBreaker.UI.Game.Renderer
             bool isPaused,
             bool[,] bricks,
             int paddleX,
+            int paddleWidth,
             List<Ball> balls,
             List<PowerUp> powerUps,
             List<ScorePop> scorePops)
@@ -54,7 +55,7 @@ namespace BrickBreaker.UI.Game.Renderer
                         int c = (x - 1) * cols / (W - 2);
                         if (bricks[c, r]) ch = '█';
                     }
-                    if (y == paddleY && x >= paddleX && x < paddleX + PaddleW) ch = '█';
+                    if (y == paddleY && x >= paddleX && x < paddleX + paddleWidth) ch = '█';
 
                     foreach (var ball in balls)
                     {
@@ -64,7 +65,10 @@ namespace BrickBreaker.UI.Game.Renderer
                     foreach (var pu in powerUps)
                     {
                         if (x == pu.X && y == pu.Y)
-                            ch = 'M';
+                        {
+                            // Now shows 'M' for MultiBall and 'E' for Expand
+                            ch = pu.Type == PowerUpType.MultiBall ? 'M' : 'E';
+                        }
                     }
                     foreach (var pop in scorePops)
                     {

@@ -10,6 +10,6 @@
         public const int PaddleW = 9;
 
         // Layout and Brick Constants
-        public const int TopMargin = 2;
+        public const int TopMargin = 0;
     }
 }

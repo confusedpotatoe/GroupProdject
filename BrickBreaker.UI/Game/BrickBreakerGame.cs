@@ -75,7 +75,12 @@ namespace BrickBreaker.Game
                 // RENDER CALL
                 _renderer.Render(
                     lives, score, _levelManager.CurrentLevelIndex, hitMultiplier, _paused,
-                    _levelManager.Bricks, paddleX, balls, powerUps, scorePops);
+                    _levelManager.Bricks,
+                    paddleX,
+                    _paddleWidth, 
+                    balls,
+                    powerUps,
+                    scorePops);
 
                 var sleep = targetDt - (sw.Elapsed - now);
                 if (sleep > TimeSpan.Zero) Thread.Sleep(sleep);
