@@ -1,48 +1,70 @@
 ﻿using BrickBreaker.Logic.Abstractions;
 using BrickBreaker.Models;
+using Npgsql;
+using NpgsqlTypes;
 using System.Text.Json;
 
 namespace BrickBreaker.Storage;
 
 public sealed class LeaderboardStore : ILeaderboardStore
 {
-    private readonly string _path;
+    private const string TableName = "leaderboard";
+    private readonly string _connectionString;
 
-    // Simplified constructor using expression body
-    public LeaderboardStore(string path) => _path = path;
+    public LeaderboardStore(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentException("A PostgreSQL connection string is required.", nameof(connectionString));
+        }
 
+        _connectionString = connectionString;
+    }
     public void Add(ScoreEntry entry)
     {
-        var entries = ReadAll(); // Read existing entries
-        entries.Add(entry); // Add new entry
+       if (entry is null) throw new ArgumentException(nameof(entry));
 
-        var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+        const string sql = $"""
+        INSERT INTO {TableName} (username, score, at)
+        VALUES (@username, @score, @at);
+        """;
 
-        // Ensure the directory exists before writing the file
-        var dir = Path.GetDirectoryName(_path);
-        if (!string.IsNullOrEmpty(dir))
-            Directory.CreateDirectory(dir); // Create directory if it does not exist
+        using var connection = new NpgsqlConnection(_connectionString);
+        using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("username", (entry.Username ?? string.Empty).Trim());
+        command.Parameters.AddWithValue("score", entry.Score);
+        command.Parameters.AddWithValue("at", NpgsqlDbType.TimestampTz, entry.At.UtcDateTime);
 
-        File.WriteAllText(_path, json); // Actually write the JSON content to file
+        connection.Open();
+        command.ExecuteNonQuery();
     }
 
     public List<ScoreEntry> ReadAll()
     {
-        if (!File.Exists(_path))
-            return new List<ScoreEntry>(); // Return empty list if file missing
+        const string sql = $"""
+    SELECT username, score, at
+    FROM {TableName};
+    """;
 
-        var json = File.ReadAllText(_path);
-        if (string.IsNullOrWhiteSpace(json))
-            return new List<ScoreEntry>(); // Handle empty file gracefully
+        using var connection = new NpgsqlConnection(_connectionString);
+        using var command = new NpgsqlCommand(sql, connection);
 
-        try
+        connection.Open();
+
+        using var reader = command.ExecuteReader();
+        var entries = new List<ScoreEntry>();
+
+        while (reader.Read())
         {
-            return JsonSerializer.Deserialize<List<ScoreEntry>>(json) ?? new List<ScoreEntry>();
+            var username = reader.GetString(reader.GetOrdinal("username"));
+            var score = reader.GetInt32(reader.GetOrdinal("score"));
+
+            var atOrdinal = reader.GetOrdinal("at");
+            var atValue = reader.GetFieldValue<DateTime>(atOrdinal);
+            var at = DateTime.SpecifyKind(atValue, DateTimeKind.Utc);
+
+            entries.Add(new ScoreEntry(username, score, new DateTimeOffset(at)));
         }
-        catch (JsonException)
-        {
-            // On invalid JSON, avoid crashing and return empty list instead
-            return new List<ScoreEntry>();
-        }
+        return entries;
     }
 }

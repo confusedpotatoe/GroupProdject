@@ -21,9 +21,11 @@ class Program
 
     static void Main()
     {
-        var paths = new FilePathProvider();
-        var userStore = new UserStore(paths.GetUserPath());
-        var leaderboardStore = new LeaderboardStore(paths.GetLeaderboardPath());
+        var storageConfig = new StorageConfiguration();
+        var connectionString = storageConfig.GetConnectionString();
+
+        var userStore = new UserStore(connectionString);
+        var leaderboardStore = new LeaderboardStore(connectionString);
 
         _lb = new Leaderboard(leaderboardStore);
         _auth = new Auth(userStore);

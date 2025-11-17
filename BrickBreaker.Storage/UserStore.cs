@@ -1,69 +1,93 @@
 using BrickBreaker.Logic.Abstractions;
 using BrickBreaker.Models;
 using System.Text.Json;
+using Npgsql;
 
 namespace BrickBreaker.Storage;
 
 public sealed class UserStore : IUserStore
 {
 
-    private readonly string _path;
-    private static readonly JsonSerializerOptions _jsonoptions = new()
+    private const string TableName = "users";
+    private readonly string _connectionString;
+    public UserStore(string connectionString)
     {
-        WriteIndented = true
-    };
-    public UserStore(string path) => _path = path;
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentException("A PostGreSQL connection string is required.", nameof(connectionString));
+        }
+        _connectionString = connectionString;
+    }
 
-   
+
     public bool Exists(string username)
     {
-        var users = ReadAll();
-
-        return users.Any(u => u.Username != null && u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            return false;
+        }
+        const string sql =
+             $"""
+             SELECT 1
+             FROM {TableName}
+             WHERE LOWER(username) = LOWER(@username)
+             LIMIT 1;
+             """;
+        using var connection = new NpgsqlConnection(_connectionString);
+        using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("username", username.Trim());
+        connection.Open();
+        return command.ExecuteScalar() is not null;
     }
     public void Add(User user)
     {
-        var users = ReadAll();
-        users.Add(user);
-        WriteAll(users);
-        
+        if (user is null) throw new ArgumentException(nameof(user));
+
+        var username = (user.Username ?? string.Empty).Trim();
+        var password = (user.Password ?? string.Empty).Trim();
+        if (username.Length == 0 || password.Length == 0)
+        {
+            throw new InvalidOperationException("Username and password are required!");
+        }
+
+        const string sql =
+            $""" 
+            INSERT INTO {TableName} (username, password)
+            VALUES (@username, @password)
+            ON CONFLICT (username) DO NOTHING;
+            """;
+        using var connection = new NpgsqlConnection(_connectionString);
+        using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("username", username);
+        command.Parameters.AddWithValue("password", password);
+
+        connection.Open();
+        command.ExecuteNonQuery();
     }
     public User? Get(string username)
     {
-        var users = ReadAll();
-
-        return users.FirstOrDefault(u => u.Username != null && u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-    }
-
-    public List<User> ReadAll()
-    {
-        if (!File.Exists(_path))
-            return new List<User>();
-
-        try
+        if (string.IsNullOrWhiteSpace(username))
         {
-            var json = File.ReadAllText(_path);
-            if (string.IsNullOrWhiteSpace(json))
-                return new List<User>();
-
-            return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
+            return null;
         }
-        catch (JsonException)
-        {
-            Console.WriteLine("UserStore: users.json is invalid or corrupted. Returning an empty list.");
-            return new List<User>();
-        }
-    }
+        const string sql = $"""
+        SELECT username, password
+        FROM {TableName}
+        WHERE LOWER(username) = LOWER(@username)
+        LIMIT 1;
+        """;
 
+        using var connection = new NpgsqlConnection(_connectionString);
+        using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("username", username.Trim());
 
-    private void WriteAll(List<User> users)
-    {
-        var dir = Path.GetDirectoryName(_path);
-        if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
+        connection.Open();
+        using var reader = command.ExecuteReader();
+        if (!reader.Read()) return null;
 
-        var json = JsonSerializer.Serialize(users, _jsonoptions);
+        var storedUsername = reader.GetString(reader.GetOrdinal("username"));
+        var storedPassword = reader.GetString(reader.GetOrdinal("password"));
+        return new User(storedUsername, storedPassword);
 
-        File.WriteAllText(_path, json);
     }
 }
-
