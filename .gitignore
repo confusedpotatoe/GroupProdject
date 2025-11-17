@@ -16,5 +16,6 @@ BrickBreaker.Storage/Properties/appsettings.json
 .DS_Store
 Thumbs.db
 
-# Codex
+# AI
 **/codex.debug.log
+AI_README.md
