@@ -14,7 +14,7 @@ namespace BrickBreaker.UI.Ui
         {
             // Set colors
             var tColor = titleColor ?? Color.Orange1;
-            var hColor = highlightColor ?? Color.Yellow;
+            var hColor = highlightColor ?? Color.White;
 
             // Clear console
             AnsiConsole.Clear();

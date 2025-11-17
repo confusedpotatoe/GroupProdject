@@ -5,6 +5,7 @@ using BrickBreaker.Ui;
 using BrickBreaker.UI.Ui.Enums;
 using BrickBreaker.UI.Ui.Interfaces;
 using BrickBreaker.UI.Ui.SpecterConsole;
+using Spectre.Console;
 using System.Linq;
 using System.Runtime.InteropServices;
 
@@ -107,6 +108,7 @@ class Program
     // =========================
     static AppState HandlePlaying()
     {
+        AnsiConsole.Clear();
         IGame game = new BrickBreakerGame();
         int score = game.Run();
 
@@ -141,6 +143,30 @@ class Program
         if (_auth.Login(username, password))
         {
             currentUser = username;
+
+            // === Loading bar AFTER successful login ===
+            AnsiConsole.Progress()
+                .Columns(
+                    new ProgressColumn[]
+                    {
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new SpinnerColumn()
+                    })
+                .Start(ctx =>
+                {
+                    var verifyTask = ctx.AddTask("[yellow]Verifying user[/]");
+                    var loadTask = ctx.AddTask("[green]Loading game data[/]");
+
+                    while (!ctx.IsFinished)
+                    {
+                        verifyTask.Increment(1.2);
+                        loadTask.Increment(0.7);
+                        Thread.Sleep(40);
+                    }
+                });
+
             return true;
         }
 

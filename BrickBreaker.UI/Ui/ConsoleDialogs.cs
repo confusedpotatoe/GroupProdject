@@ -1,4 +1,5 @@
 ﻿using BrickBreaker.UI.Ui.Interfaces;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,11 +12,16 @@ namespace BrickBreaker.Ui
     {
         public (string Username, string Password) PromptCredentials()
         {
-            Console.Write("Username: ");
-            var u = Console.ReadLine()?.Trim() ?? "";
-            Console.Write("Password: ");
-            var p = Console.ReadLine()?.Trim() ?? "";
-            return (u, p);
+            var username = AnsiConsole.Prompt(
+                new TextPrompt<string>("Username: ")
+                    .PromptStyle("White"));
+
+            var password = AnsiConsole.Prompt(
+                new TextPrompt<string>("Password: ")
+                    .PromptStyle("White")
+                    .Secret()); 
+
+            return (username, password);
         }
 
         public string PromptNewUsername()
