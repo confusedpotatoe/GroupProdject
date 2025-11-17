@@ -37,7 +37,7 @@ namespace BrickBreaker.UI.Game.Renderer
             Console.Write($"Multiplier: x{hitMultiplier,2}    ");
             Console.ResetColor();
 
-            Console.SetCursorPosition(2, H + 5);
+            Console.SetCursorPosition(W + 4, 4);
             Console.Write("Press 'N' for next track, 'P' to pause/resume music");
 
 
