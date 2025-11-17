@@ -10,16 +10,31 @@ namespace BrickBreaker.UI.Ui
 {
     public class MenuHelper
     {
-        // Generic method to display enum-based menu and return selection
-        public T ShowMenu<T>(string title) where T : Enum
+        public T ShowMenu<T>(string title, Color? titleColor = null, Color? highlightColor = null) where T : Enum
         {
+            // Set colors
+            var tColor = titleColor ?? Color.Orange1;
+            var hColor = highlightColor ?? Color.Yellow;
+
+            // Clear console
+            AnsiConsole.Clear();
+
+            // Show Figlet title
+            AnsiConsole.Write(
+                new FigletText(title)
+                    .Centered()
+                    .Color(tColor)
+            );
+
+            // Menu items
             var items = Enum.GetValues(typeof(T)).Cast<T>().ToList();
 
             return AnsiConsole.Prompt(
                 new SelectionPrompt<T>()
-                    .Title(title)
+                    .Title("[bold yellow]Select an option:[/]")
                     .PageSize(10)
                     .AddChoices(items)
+                    .HighlightStyle(new Style(hColor, Color.Black, Decoration.Bold))
             );
         }
     }

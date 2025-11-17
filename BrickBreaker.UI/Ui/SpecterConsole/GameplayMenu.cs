@@ -19,7 +19,7 @@ namespace BrickBreaker.UI.Ui.SpecterConsole
             AnsiConsole.Clear();
 
             // Use MenuHelper to display the menu
-            var choice = _menuHelper.ShowMenu<GameplayMenuChoice>("=== Gameplay Menu ===");
+            var choice = _menuHelper.ShowMenu<GameplayMenuChoice>("Brick Breaker");
 
             return choice;
         }
