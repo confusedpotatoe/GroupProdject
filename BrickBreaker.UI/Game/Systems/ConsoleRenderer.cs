@@ -89,6 +89,8 @@ namespace BrickBreaker.UI.Game.Renderer
             }
             sb.Append('└'); sb.Append('─', W - 2); sb.Append('┘');
 
+
+
             Console.SetCursorPosition(0, 1);
             Console.Write(sb.ToString());
 
