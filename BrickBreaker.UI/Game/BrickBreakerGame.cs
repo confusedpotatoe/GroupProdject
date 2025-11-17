@@ -140,6 +140,12 @@ namespace BrickBreaker.Game
         {
             while (Console.KeyAvailable) Console.ReadKey(true);
 
+            // Musikstyrning
+            if (_keyboard.IsNPressed()) _audio.Next();
+            if (_keyboard.IsPPressed()) _audio.Pause();
+
+
+
             // Hantera paus
             bool spaceDown = _keyboard.IsSpacePressed();
             if (spaceDown && !_prevSpaceDown)
@@ -175,6 +181,7 @@ namespace BrickBreaker.Game
                     paddleX = Math.Min(W - _paddleWidth - 1, paddleX + speed);
             }
         }
+
 
 
 

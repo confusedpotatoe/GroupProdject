@@ -5,5 +5,9 @@ namespace BrickBreaker.UI.Game.Infrastructure
     {
         void StartMusic();
         void StopMusic();
+
+        void Next();
+        void Pause();
+
     }
 }

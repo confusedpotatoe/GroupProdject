@@ -17,4 +17,7 @@ public sealed class Win32Keyboard : IKeyboard
     public bool IsEscapePressed() => IsDown(VK_ESCAPE);
     public bool IsSpacePressed() => IsDown((int)ConsoleKey.Spacebar);
     public bool IsUpPressed() => IsDown((int)ConsoleKey.UpArrow);
+
+    public bool IsNPressed() => IsDown((int)ConsoleKey.N);
+    public bool IsPPressed() => IsDown((int)ConsoleKey.P);
 }

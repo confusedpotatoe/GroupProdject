@@ -1,4 +1,5 @@
-﻿using BrickBreaker.UI.Game.Infrastructure;
+﻿using BrickBreaker.Models;
+using BrickBreaker.UI.Game.Infrastructure;
 using NAudio.Wave;
 using System;
 
@@ -16,7 +17,24 @@ public sealed class NaudioGameAudio : IGameAudio, IDisposable
         "Assets/Sounds/findingnemo.mp3"
     };
     private int currentTrack = 0;
+    public void Pause()
+    {
+        if (soundtrackPlayer != null)
+        {
+            if (soundtrackPlayer.PlaybackState == PlaybackState.Playing)
+                soundtrackPlayer.Pause();
+            else if (soundtrackPlayer.PlaybackState == PlaybackState.Paused)
+                soundtrackPlayer.Play();
+        }
+    }
 
+    public void Next()
+    {
+        if (soundtrackPlayer != null)
+        {
+            soundtrackPlayer.Stop(); // PlaybackStopped skickas och handling sker (spelar nästa låt)
+        }
+    }
     public void StartMusic()
     {
         musicActive = true;

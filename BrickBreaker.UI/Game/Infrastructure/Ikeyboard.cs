@@ -7,6 +7,8 @@
         bool IsEscapePressed();
         bool IsSpacePressed();
         bool IsUpPressed();
+        bool IsNPressed();
+        bool IsPPressed();
     }
 
 }
