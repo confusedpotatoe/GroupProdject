@@ -1,8 +1,9 @@
-﻿namespace BrickBreaker.Game
+﻿namespace BrickBreaker.UI.Game.Models
 {
     public enum PowerUpType
     {
-        MultiBall
+        MultiBall,
+        PaddleExpand // ADDED A NEW POWER-UP TYPE
     }
 
     public class PowerUp
@@ -16,5 +17,4 @@
             Type = type;
         }
     }
-
 }
