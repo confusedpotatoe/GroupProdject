@@ -36,6 +36,7 @@ namespace BrickBreaker.UI.Ui
 
             return choice switch
             {
+                LoginMenuChoice.QuickPlay => AppState.Playing, //fixed to go to gameplay menu after quick play
                 LoginMenuChoice.Login => AppState.LoginMenu,
                 LoginMenuChoice.Register => AppState.LoginMenu,
                 LoginMenuChoice.Leaderboard => AppState.LoginMenu,
@@ -59,4 +60,3 @@ namespace BrickBreaker.UI.Ui
         }
     }
 }
- 

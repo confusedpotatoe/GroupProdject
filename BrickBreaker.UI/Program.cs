@@ -7,7 +7,7 @@ using BrickBreaker.UI.Ui.Interfaces;
 using BrickBreaker.UI.Ui.SpecterConsole;
 using System.Linq;
 using System.Runtime.InteropServices;
-
+public enum GameMode { Normal, QuickPlay }
 class Program
 {
     static string? currentUser = null ;
@@ -18,6 +18,8 @@ class Program
     static ILoginMenu _loginMenu = new LoginMenu();
     static IGameplayMenu _gameplayMenu = new GameplayMenu();
     static IConsoleDialogs _dialogs = new ConsoleDialogs();
+
+    static GameMode currentMode = GameMode.Normal;
 
     static void Main()
     {
@@ -51,6 +53,10 @@ class Program
 
         switch (choice)
         {
+            case LoginMenuChoice.QuickPlay:
+                ClearInputBuffer();
+                currentMode = GameMode.QuickPlay;
+                return AppState.Playing;
             case LoginMenuChoice.Register:
                 DoRegister();
                 _dialogs.Pause();
@@ -82,6 +88,7 @@ class Program
         switch (choice)
         {
             case GameplayMenuChoice.Start:
+                currentMode = GameMode.Normal;
                 return AppState.Playing;
 
             case GameplayMenuChoice.Best:
@@ -114,7 +121,11 @@ class Program
         Console.SetCursorPosition(0, lowerLine);
 
         _dialogs.ShowMessage($"\nFinal score: {score}");
-        _lb.Submit(currentUser ?? "guest", score);
+        if (currentMode != GameMode.QuickPlay)
+        {
+            _lb.Submit(currentUser ?? "guest", score);
+        }
+
         _dialogs.Pause();
 
         return currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;

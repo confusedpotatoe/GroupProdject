@@ -1,6 +1,7 @@
 ﻿using NAudio.Wave;
 
 
+
 namespace BrickBreaker.Game.Infrastructure
 {
     public class AudioPlayer : IDisposable
@@ -13,9 +14,31 @@ namespace BrickBreaker.Game.Infrastructure
         private readonly string[] playlist = new string[]
         {
             "Assets/Sounds/Backbeat.mp3",
-            "Assets/Sounds/Arpent.mp3"
+            "Assets/Sounds/Arpent.mp3",
+            "Assets/Sounds/findingnemo.mp3"
         };
         private int currentTrack = 0;
+
+
+        public void Pause()
+        {
+            if (soundtrackPlayer != null)
+            {
+                // Toggle pause/resume
+                if (soundtrackPlayer.PlaybackState == PlaybackState.Playing)
+                    soundtrackPlayer.Pause();
+                else if (soundtrackPlayer.PlaybackState == PlaybackState.Paused)
+                    soundtrackPlayer.Play();
+            }
+        }
+
+        public void Next()
+        {
+            if (soundtrackPlayer != null)
+            {
+                soundtrackPlayer.Stop(); // triggers playbackStoppedHandler, goes to next
+            }
+        }
 
         public void StartMusic()
         {

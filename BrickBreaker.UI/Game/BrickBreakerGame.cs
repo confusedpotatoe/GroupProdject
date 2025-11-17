@@ -49,7 +49,7 @@ namespace BrickBreaker.Game
         {
             var sw = new Stopwatch();
             var targetDt = TimeSpan.FromMilliseconds(1000.0 / 60.0); // ~16.67ms for 60fps
-            
+
             Init();
             sw.Start();
             gameTimer.Reset();
@@ -77,7 +77,7 @@ namespace BrickBreaker.Game
                     lives, score, _levelManager.CurrentLevelIndex, hitMultiplier, _paused,
                     _levelManager.Bricks,
                     paddleX,
-                    _paddleWidth, 
+                    _paddleWidth,
                     balls,
                     powerUps,
                     scorePops);
@@ -128,6 +128,11 @@ namespace BrickBreaker.Game
         void Input()
         {
             while (Console.KeyAvailable) Console.ReadKey(true);
+
+            if (IsKeyDown((int)ConsoleKey.N))
+                _audioPlayer.Next();
+            if (IsKeyDown((int)ConsoleKey.P))
+                _audioPlayer.Pause();
 
             bool spaceDown = IsKeyDown((int)ConsoleKey.Spacebar);
             if (spaceDown && !_prevSpaceDown)
@@ -181,7 +186,7 @@ namespace BrickBreaker.Game
                     paddleX += widthDifference / 2; // Shift back
                     paddleX = Math.Clamp(paddleX, 1, W - _paddleWidth - 1);
                 }
-            } 
+            }
 
 
             // Update score pop-ups
@@ -195,7 +200,7 @@ namespace BrickBreaker.Game
             ballTick++;
             if (ballTick % 7 != 0) return;
 
-            
+
             if (!waitingForLaunch)
             {
                 for (int i = balls.Count - 1; i >= 0; i--)
@@ -206,7 +211,7 @@ namespace BrickBreaker.Game
                         _levelManager.Bricks,
                         paddleX,
                         paddleY,
-                        _paddleWidth, 
+                        _paddleWidth,
                         out BrickHitInfo? hitInfo);
 
                     if (isRemoved)
