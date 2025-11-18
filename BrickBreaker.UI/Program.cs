@@ -238,8 +238,30 @@ class Program
         return false;
     }
 
-    static void ShowLeaderboard()
-    {
+        static void ShowLeaderboard()
+        {
+            AnsiConsole.Progress()
+            .Columns(new ProgressColumn[]
+            {
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new SpinnerColumn()
+            })
+        .Start(ctx =>
+            {
+                var task = ctx.AddTask("[green]Loading Scores[/]", maxValue: 100);
+                while (!ctx.IsFinished)
+                {
+                    task.Increment(4);
+                    Thread.Sleep(40);
+                }
+            });
+
+
+        AnsiConsole.Clear();
+
+
         if (!_databaseAvailable)
         {
             ShowDatabaseWarning("Leaderboard is unavailable because the Supabase connection string is missing.");
