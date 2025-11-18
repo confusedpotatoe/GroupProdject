@@ -1,4 +1,6 @@
-﻿using BrickBreaker.UI.Ui.Enums;
+﻿using BrickBreaker.Logic;
+using BrickBreaker.Models;
+using BrickBreaker.UI.Ui.Enums;
 using BrickBreaker.UI.Ui.Interfaces;
 using Spectre.Console;
 using System;
@@ -17,7 +19,7 @@ namespace BrickBreaker.UI.Ui.SpecterConsole
         {
             // Clear console for a clean display
             AnsiConsole.Clear();
-
+           
             // Display menu using Spectre.Console
             var choice = _menuHelper.ShowMenu<LoginMenuChoice>("Brick Breaker");
 

@@ -18,11 +18,10 @@ namespace BrickBreaker.UI.Ui.SpecterConsole
             // Clear the console for a clean menu
             AnsiConsole.Clear();
 
-            
             // Use MenuHelper to display the menu
-            var choice = _menuHelper.ShowMenu<GameplayMenuChoice>("Brick Breaker");;
+            var choice = _menuHelper.ShowMenu<GameplayMenuChoice>("Brick Breaker", welcomeMessage: $"[bold]Welcome, {username}![/]\n");
+            
 
-            AnsiConsole.MarkupLine($"[bold yellow]Welcome, {username}![/]");
             return choice;
         }
     }

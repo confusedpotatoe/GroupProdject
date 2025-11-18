@@ -1,7 +1,9 @@
 using BrickBreaker.Game;
 using BrickBreaker.Logic;
+using BrickBreaker.Models;
 using BrickBreaker.Storage;
 using BrickBreaker.Ui;
+using BrickBreaker.UI.Ui;
 using BrickBreaker.UI.Ui.Enums;
 using BrickBreaker.UI.Ui.Interfaces;
 using BrickBreaker.UI.Ui.SpecterConsole;

@@ -32,7 +32,7 @@ namespace BrickBreaker.Ui
 
         public string PromptNewPassword()
         {
-            Console.Write("Choose a password: ");
+           AnsiConsole.Write("Choose a password: ");
             return Console.ReadLine()?.Trim() ?? "";
         }
 
