@@ -8,12 +8,21 @@ public sealed class Auth
     private readonly IUserStore _users;
     public Auth(IUserStore users) => _users = users;
 
+    // Checks if username already exists
+    public bool UsernameExists(string username)
+    {
+        username = (username ?? "").Trim();
+        return _users.Exists(username);
+    }
+
     public bool Register(string username, string password)
     {
         username = (username ?? "").Trim();
+        if (_users.Exists(username) || username.Length == 0) return false;
+
         password = (password ?? "").Trim();
-        if (username.Length == 0 || password.Length == 0) return false;
-        if (_users.Exists(username)) return false;
+        if (password.Length == 0) return false;
+        
 
         _users.Add(new User(username, password));
         return true;

@@ -157,6 +157,7 @@ class Program
     // =========================
     // Helper methods
     // =========================
+
     static void DoRegister()
     {
         if (!_databaseAvailable)
@@ -166,6 +167,23 @@ class Program
         }
 
         var username = _dialogs.PromptNewUsername();
+
+        username = (username ?? "").Trim();
+
+        // Checks so username is not empty 
+        if(username.Length == 0)
+        {
+            _dialogs.ShowMessage("Username can't be empty.");
+            return;
+        }
+
+        // Checks so username don´t already exists
+        if (_auth.UsernameExists(username))
+        {
+            _dialogs.ShowMessage("Username already exists.");
+            return;
+        }
+
         var password = _dialogs.PromptNewPassword();
 
         bool ok = _auth.Register(username, password);
