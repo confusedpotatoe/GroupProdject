@@ -6,14 +6,9 @@ using System.Threading.Tasks;
 
 namespace BrickBreaker.UI.Ui.Enums
 {
-    public enum LoginMenuChoice
-        
+    public enum GameMode
     {
-        QuickPlay,
-        Register,
-        Login,
-        Leaderboard,
-        Exit,
-        
+        Normal,
+        QuickPlay
     }
 }

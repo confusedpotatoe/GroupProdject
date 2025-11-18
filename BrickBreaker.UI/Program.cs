@@ -8,7 +8,6 @@ using BrickBreaker.UI.Ui.SpecterConsole;
 using Spectre.Console;
 using System.Linq;
 using System.Runtime.InteropServices;
-public enum GameMode { Normal, QuickPlay }
 class Program
 {
     static string? currentUser = null ;
@@ -20,8 +19,9 @@ class Program
     static ILoginMenu _loginMenu = new LoginMenu();
     static IGameplayMenu _gameplayMenu = new GameplayMenu();
     static IConsoleDialogs _dialogs = new ConsoleDialogs();
-
     static GameMode currentMode = GameMode.Normal;
+
+
 
     static void Main()
     {
