@@ -48,7 +48,7 @@ namespace BrickBreaker.Ui
         {
             // Create a table
             var table = new Table()
-                .Border(TableBorder.Square)
+                .Border(TableBorder.Rounded)
                 .Title("Top 10 Leaderboard");
 
             // Add columns
