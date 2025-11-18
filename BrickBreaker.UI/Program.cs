@@ -8,28 +8,42 @@ using BrickBreaker.UI.Ui.SpecterConsole;
 using Spectre.Console;
 using System.Linq;
 using System.Runtime.InteropServices;
-
+public enum GameMode { Normal, QuickPlay }
 class Program
 {
     static string? currentUser = null ;
     private static Leaderboard _lb = null!;
     private static Auth _auth = null!;
+    private static bool _databaseAvailable = false;
 
     // UI menus and dialogs
     static ILoginMenu _loginMenu = new LoginMenu();
     static IGameplayMenu _gameplayMenu = new GameplayMenu();
     static IConsoleDialogs _dialogs = new ConsoleDialogs();
 
+    static GameMode currentMode = GameMode.Normal;
+
     static void Main()
     {
         var storageConfig = new StorageConfiguration();
         var connectionString = storageConfig.GetConnectionString();
 
-        var userStore = new UserStore(connectionString);
-        var leaderboardStore = new LeaderboardStore(connectionString);
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            var userStore = new UserStore(connectionString);
+            var leaderboardStore = new LeaderboardStore(connectionString);
 
-        _lb = new Leaderboard(leaderboardStore);
-        _auth = new Auth(userStore);
+            _lb = new Leaderboard(leaderboardStore);
+            _auth = new Auth(userStore);
+            _databaseAvailable = true;
+        }
+        else
+        {
+            _lb = new Leaderboard(new DisabledLeaderboardStore());
+            _auth = new Auth(new DisabledUserStore());
+            _databaseAvailable = false;
+            ShowDatabaseWarning("Supabase connection string missing. Database features are disabled until it is configured.");
+        }
 
         AppState state = AppState.LoginMenu;
 
@@ -54,6 +68,10 @@ class Program
 
         switch (choice)
         {
+            case LoginMenuChoice.QuickPlay:
+                ClearInputBuffer();
+                currentMode = GameMode.QuickPlay;
+                return AppState.Playing;
             case LoginMenuChoice.Register:
                 DoRegister();
                 _dialogs.Pause();
@@ -85,6 +103,7 @@ class Program
         switch (choice)
         {
             case GameplayMenuChoice.Start:
+                currentMode = GameMode.Normal;
                 return AppState.Playing;
 
             case GameplayMenuChoice.Best:
@@ -118,7 +137,18 @@ class Program
         Console.SetCursorPosition(0, lowerLine);
 
         _dialogs.ShowMessage($"\nFinal score: {score}");
-        _lb.Submit(currentUser ?? "guest", score);
+        if (currentMode != GameMode.QuickPlay)
+        {
+            if (_databaseAvailable)
+            {
+                _lb.Submit(currentUser ?? "guest", score);
+            }
+            else
+            {
+                ShowDatabaseWarning("Unable to submit scores without the Supabase connection string. Your score was not saved.");
+            }
+        }
+
         _dialogs.Pause();
 
         return currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
@@ -129,6 +159,12 @@ class Program
     // =========================
     static void DoRegister()
     {
+        if (!_databaseAvailable)
+        {
+            ShowDatabaseWarning("Registration is disabled because the Supabase connection string is missing.");
+            return;
+        }
+
         var username = _dialogs.PromptNewUsername();
         var password = _dialogs.PromptNewPassword();
 
@@ -140,6 +176,12 @@ class Program
 
     static bool DoLogin()
     {
+        if (!_databaseAvailable)
+        {
+            ShowDatabaseWarning("Login requires the Supabase database. Please configure the connection string first.");
+            return false;
+        }
+
         var (username, password) = _dialogs.PromptCredentials();
 
         if (_auth.Login(username, password))
@@ -178,6 +220,12 @@ class Program
 
     static void ShowLeaderboard()
     {
+        if (!_databaseAvailable)
+        {
+            ShowDatabaseWarning("Leaderboard is unavailable because the Supabase connection string is missing.");
+            return;
+        }
+
         var top = _lb.Top(10);
         if (!top.Any())
         {
@@ -191,6 +239,12 @@ class Program
 
     static void ShowBestScore()
     {
+        if (!_databaseAvailable)
+        {
+            ShowDatabaseWarning("Best score lookup requires the Supabase database. Please configure the connection string first.");
+            return;
+        }
+
         var best = _lb.BestFor(currentUser!);
 
         if (best == null)
@@ -233,5 +287,13 @@ class Program
         {
             // ignored: console might not be Windows or handle unavailable
         }
+    }
+
+    static void ShowDatabaseWarning(string message)
+    {
+        var previousColor = Console.ForegroundColor;
+        Console.ForegroundColor = ConsoleColor.Red;
+        _dialogs.ShowMessage(message);
+        Console.ForegroundColor = previousColor;
     }
 }

@@ -1,11 +1,11 @@
 ﻿using BrickBreaker.Game.Models;
-using BrickBreaker.UI.Game.Models; 
+using BrickBreaker.UI.Game.Models;
 using System.Text;
-using static BrickBreaker.Game.Models.Constants; 
+using static BrickBreaker.Game.Models.Constants;
 
 namespace BrickBreaker.UI.Game.Renderer
 {
-    public class ConsoleRenderer 
+    public class ConsoleRenderer
     {
         // This is the entire Render() method, moved from BrickBreakerGame
         public void Render(
@@ -36,6 +36,10 @@ namespace BrickBreaker.UI.Game.Renderer
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write($"Multiplier: x{hitMultiplier,2}    ");
             Console.ResetColor();
+
+            Console.SetCursorPosition(W + 4, 4);
+            Console.Write("Press 'N' for next track, 'P' to pause/resume music");
+
 
             var sb = new StringBuilder((W + 1) * (H + 2));
             sb.Append('┌'); sb.Append('─', W - 2); sb.Append('┐').Append('\n');
@@ -84,6 +88,8 @@ namespace BrickBreaker.UI.Game.Renderer
                 sb.Append('│').Append('\n');
             }
             sb.Append('└'); sb.Append('─', W - 2); sb.Append('┘');
+
+
 
             Console.SetCursorPosition(0, 1);
             Console.Write(sb.ToString());

@@ -1,12 +1,13 @@
+using BrickBreaker.Game.Models;
+using BrickBreaker.UI.Game.Infrastructure;
+using BrickBreaker.Game.Systems;
+using BrickBreaker.UI.Game.Infrastructure;
+using BrickBreaker.UI.Game.Models;
+using BrickBreaker.UI.Game.Renderer;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using BrickBreaker.UI.Game.Models;
-using BrickBreaker.Game.Models;
 using static BrickBreaker.Game.Models.Constants;
-using BrickBreaker.Game.Systems;
-using BrickBreaker.UI.Game.Renderer;
-using BrickBreaker.Game.Infrastructure;
 
 namespace BrickBreaker.Game
 {
@@ -16,11 +17,11 @@ namespace BrickBreaker.Game
         private readonly CollisionHandler _collisionHandler = new CollisionHandler();
         private readonly ConsoleRenderer _renderer = new ConsoleRenderer();
         private readonly LevelManager _levelManager = new LevelManager();
-        private readonly AudioPlayer _audioPlayer = new AudioPlayer();
 
         // Game State
         private bool _paused = false;
         private bool _prevSpaceDown = false;
+        private bool _prevMusicPauseDown = false;
         private bool running;
         private int lives = 3;
         private int paddleX, paddleY;
@@ -40,21 +41,32 @@ namespace BrickBreaker.Game
         private int _paddleWidth = PaddleW; // <-- NEW: Use this for current width
         private int _paddleExtendTimer = 0;
 
-        // Input
-        [DllImport("user32.dll")] static extern short GetAsyncKeyState(int vKey);
-        static bool IsKeyDown(int vKey) => (GetAsyncKeyState(vKey) & 0x8000) != 0;
-        const int VK_LEFT = 0x25, VK_RIGHT = 0x27, VK_ESCAPE = 0x1B;
+
+        private readonly IKeyboard _keyboard;
+        private readonly IGameAudio _audio;
+
+        public BrickBreakerGame(IKeyboard keyboard, IGameAudio audio)
+        {
+            _keyboard = keyboard;
+            _audio = audio;
+        }
+
+        public BrickBreakerGame()
+        : this(new Win32Keyboard(), new NaudioGameAudio())
+        {
+        }
 
         public int Run()
         {
             var sw = new Stopwatch();
             var targetDt = TimeSpan.FromMilliseconds(1000.0 / 60.0); // ~16.67ms for 60fps
-            
+
             Init();
             sw.Start();
             gameTimer.Reset();
             gameTimer.Start();
-            _audioPlayer.StartMusic();
+
+            _audio.StartMusic();
 
             try { Console.CursorVisible = false; } catch { }
             Console.OutputEncoding = Encoding.UTF8;
@@ -77,7 +89,7 @@ namespace BrickBreaker.Game
                     lives, score, _levelManager.CurrentLevelIndex, hitMultiplier, _paused,
                     _levelManager.Bricks,
                     paddleX,
-                    _paddleWidth, 
+                    _paddleWidth,
                     balls,
                     powerUps,
                     scorePops);
@@ -87,7 +99,7 @@ namespace BrickBreaker.Game
             }
 
             gameTimer.Stop();
-            _audioPlayer.StopMusic();
+            _audio.StopMusic();
 
             try { Console.SetCursorPosition(0, H + 1); Console.CursorVisible = true; } catch { }
             Console.WriteLine($"Game time: {gameTimer.Elapsed:mm\\:ss\\.ff}");
@@ -129,42 +141,55 @@ namespace BrickBreaker.Game
         {
             while (Console.KeyAvailable) Console.ReadKey(true);
 
-            bool spaceDown = IsKeyDown((int)ConsoleKey.Spacebar);
+            // Musikstyrning
+            if (_keyboard.IsNPressed()) _audio.Next();
+
+            bool pauseMusicDown = _keyboard.IsPPressed();
+            if (pauseMusicDown && !_prevMusicPauseDown)
+                _audio.Pause();
+            _prevMusicPauseDown = pauseMusicDown;
+
+
+
+            // Hantera paus
+            bool spaceDown = _keyboard.IsSpacePressed();
             if (spaceDown && !_prevSpaceDown)
                 _paused = !_paused;
             _prevSpaceDown = spaceDown;
 
-            bool upDown = IsKeyDown((int)ConsoleKey.UpArrow);
+            // Hantera ESC för att avsluta
+            if (_keyboard.IsEscapePressed())
+                running = false;
+
+            if (_paused) return;
+
+            // Hantera launch (UP)
+            bool upDown = _keyboard.IsUpPressed();
             if (waitingForLaunch && upDown)
             {
                 if (balls.Count > 0)
                 {
-                    // Set horizontal speed
                     balls[0].SetHorizontalVelocity(1, 0);
-
-                    // SET VERTICAL SPEED (This was the missing line)
                     balls[0].SetVerticalVelocity(-1);
                 }
                 waitingForLaunch = false;
             }
 
-            if (IsKeyDown(VK_ESCAPE))
-                running = false;
-
-            if (_paused) return;
-
+            // Flytta paddeln vänster/höger
             paddleTick++;
             int speed = 2;
-
             if (paddleTick % 2 == 0)
             {
-                if (IsKeyDown(VK_LEFT))
+                if (_keyboard.IsLeftPressed())
                     paddleX = Math.Max(1, paddleX - speed);
-
-                if (IsKeyDown(VK_RIGHT))
+                if (_keyboard.IsRightPressed())
                     paddleX = Math.Min(W - _paddleWidth - 1, paddleX + speed);
             }
         }
+
+
+
+
 
         void Update()
         {
@@ -181,7 +206,7 @@ namespace BrickBreaker.Game
                     paddleX += widthDifference / 2; // Shift back
                     paddleX = Math.Clamp(paddleX, 1, W - _paddleWidth - 1);
                 }
-            } 
+            }
 
 
             // Update score pop-ups
@@ -195,7 +220,7 @@ namespace BrickBreaker.Game
             ballTick++;
             if (ballTick % 7 != 0) return;
 
-            
+
             if (!waitingForLaunch)
             {
                 for (int i = balls.Count - 1; i >= 0; i--)
@@ -206,7 +231,7 @@ namespace BrickBreaker.Game
                         _levelManager.Bricks,
                         paddleX,
                         paddleY,
-                        _paddleWidth, 
+                        _paddleWidth,
                         out BrickHitInfo? hitInfo);
 
                     if (isRemoved)

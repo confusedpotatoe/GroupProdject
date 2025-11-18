@@ -17,26 +17,30 @@ namespace BrickBreaker.Storage
             _root = LocateSolutionRoot() ?? Directory.GetCurrentDirectory();
             var builder = new ConfigurationBuilder()
                 .SetBasePath(_root)
-                .AddJsonFile(Path.Combine("BrickBreaker.Storage", "Properties", "appsettings.json"),
-                optional: false,
-                reloadOnChange: true);
+                .AddJsonFile(
+                    Path.Combine("BrickBreaker.Storage", "Properties", "appsettings.json"),
+                    optional: true,
+                    reloadOnChange: true);
 
-            _config = builder.Build();
+            try
+            {
+                _config = builder.Build();
+            }
+            catch
+            {
+                // Fall back to an empty configuration so the app can still run without the file.
+                _config = new ConfigurationBuilder().Build();
+            }
         }
 
-        public string GetConnectionString()
+        public string? GetConnectionString()
         {
             var ConnectionString = _config.GetConnectionString("Supabase")
             ?? _config["Supabase"]
             ?? _config["ConnectionString:Supabase"]
             ?? _config["SupabaseConnection"];
 
-            if (!string.IsNullOrWhiteSpace(ConnectionString))
-            {
-                return ConnectionString;
-            }
-            else
-            throw new InvalidOperationException ("Missing Supabase connection string. Add `ConnectionString:Supabase` to BrickBreaker.Storage/Properties/appsettings.json.");
+            return string.IsNullOrWhiteSpace(ConnectionString) ? null : ConnectionString;
         }
 
         private static string? LocateSolutionRoot()

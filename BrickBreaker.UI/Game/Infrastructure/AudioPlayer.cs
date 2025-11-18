@@ -1,0 +1,86 @@
+﻿using BrickBreaker.Models;
+using BrickBreaker.UI.Game.Infrastructure;
+using NAudio.Wave;
+using System;
+
+public sealed class NaudioGameAudio : IGameAudio, IDisposable
+{
+    private IWavePlayer? soundtrackPlayer;
+    private AudioFileReader? soundtrackReader;
+    private bool musicActive = false;
+    private EventHandler<StoppedEventArgs>? playbackStoppedHandler;
+
+    private readonly string[] playlist = new string[]
+    {
+        "Assets/Sounds/Backbeat.mp3",
+        "Assets/Sounds/Arpent.mp3",
+        "Assets/Sounds/findingnemo.mp3"
+    };
+    private int currentTrack = 0;
+    public void Pause()
+    {
+        if (soundtrackPlayer != null)
+        {
+            if (soundtrackPlayer.PlaybackState == PlaybackState.Playing)
+                soundtrackPlayer.Pause();
+            else if (soundtrackPlayer.PlaybackState == PlaybackState.Paused)
+                soundtrackPlayer.Play();
+        }
+    }
+
+    public void Next()
+    {
+        if (soundtrackPlayer != null)
+        {
+            soundtrackPlayer.Stop(); // PlaybackStopped skickas och handling sker (spelar nästa låt)
+        }
+    }
+    public void StartMusic()
+    {
+        musicActive = true;
+        soundtrackReader = new AudioFileReader(playlist[currentTrack]);
+        soundtrackPlayer = new WaveOutEvent();
+
+        playbackStoppedHandler = (s, e) =>
+        {
+            if (!musicActive) return;
+
+            currentTrack = (currentTrack + 1) % playlist.Length;
+            soundtrackReader?.Dispose();
+            soundtrackReader = new AudioFileReader(playlist[currentTrack]);
+            soundtrackPlayer?.Init(soundtrackReader);
+            soundtrackPlayer?.Play();
+        };
+
+        soundtrackPlayer.PlaybackStopped += playbackStoppedHandler;
+        soundtrackPlayer.Init(soundtrackReader);
+        soundtrackPlayer.Play();
+    }
+
+    public void StopMusic()
+    {
+        musicActive = false;
+
+        if (soundtrackPlayer != null)
+        {
+            if (playbackStoppedHandler != null)
+                soundtrackPlayer.PlaybackStopped -= playbackStoppedHandler;
+
+            soundtrackPlayer.Stop();
+            soundtrackPlayer.Dispose();
+            soundtrackPlayer = null;
+        }
+
+        if (soundtrackReader != null)
+        {
+            soundtrackReader.Dispose();
+            soundtrackReader = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        StopMusic();
+        GC.SuppressFinalize(this);
+    }
+}
