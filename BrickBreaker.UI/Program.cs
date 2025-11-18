@@ -10,6 +10,7 @@ using BrickBreaker.UI.Ui.SpecterConsole;
 using Spectre.Console;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 class Program
 {
     static string? currentUser = null ;
@@ -27,6 +28,8 @@ class Program
 
     static void Main()
     {
+        Console.OutputEncoding = Encoding.UTF8;
+
         var storageConfig = new StorageConfiguration();
         var connectionString = storageConfig.GetConnectionString();
 
