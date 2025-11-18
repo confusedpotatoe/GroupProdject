@@ -223,8 +223,8 @@ class Program
 
                     while (!ctx.IsFinished)
                     {
-                        verifyTask.Increment(1.2);
-                        loadTask.Increment(0.7);
+                        verifyTask.Increment(5);
+                        loadTask.Increment(4);
                         Thread.Sleep(40);
                     }
                 });

@@ -26,7 +26,7 @@ namespace BrickBreaker.Ui
 
         public string PromptNewUsername()
         {
-            Console.Write("\nChoose a username: ");
+            AnsiConsole.Write("\nChoose a username: ");
             return Console.ReadLine()?.Trim() ?? "";
         }
 
