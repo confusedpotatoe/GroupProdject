@@ -22,6 +22,6 @@ jobs:
       - name: Build project (Release)
         run: dotnet build --configuration Release --no-restore
 
-        - name: Run tests
+      - name: Run tests
         run: dotnet test --configuration Release --no-build
 
