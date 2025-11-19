@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11206.111 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrickBreaker.Core", "BrickBreaker.Core\BrickBreaker.Core.csproj", "{B84D5830-73B6-4623-8ADB-533EB6CEDF21}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrickBreaker.UI", "BrickBreaker.UI\BrickBreaker.UI.csproj", "{D597FD8A-145A-4D08-A1B4-142B8F812822}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrickBreaker.Tests", "BrickBreaker.Tests\BrickBreaker.Tests.csproj", "{EEF64C61-89D2-4A7F-A911-12730D132C9B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrickBreaker", "BrickBreaker\BrickBreaker.csproj", "{6F4659C4-A682-47AA-B149-F44A14D0A668}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,8 +71,23 @@ Global
 		{EEF64C61-89D2-4A7F-A911-12730D132C9B}.Release|x64.Build.0 = Release|Any CPU
 		{EEF64C61-89D2-4A7F-A911-12730D132C9B}.Release|x86.ActiveCfg = Release|Any CPU
 		{EEF64C61-89D2-4A7F-A911-12730D132C9B}.Release|x86.Build.0 = Release|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Debug|x64.Build.0 = Debug|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Debug|x86.Build.0 = Debug|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Release|x64.ActiveCfg = Release|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Release|x64.Build.0 = Release|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Release|x86.ActiveCfg = Release|Any CPU
+		{6F4659C4-A682-47AA-B149-F44A14D0A668}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6A895B8-BE80-4A04-AF48-FF67147524BC}
 	EndGlobalSection
 EndGlobal
