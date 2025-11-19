@@ -70,13 +70,60 @@
                 { false, true, false, true }
             });
 
-            // Level 2 - hard (solid block of bricks, 16x6 grid)
-            _levels.Add(new bool[16, 6]
+            // Level 2 - zig-zag columns for medium coverage
+            _levels.Add(new bool[12, 5]
+            {
+                { false, true, false, true, false },
+                { true, false, true, true, true },
+                { true, false, false, false, true },
+                { false, true, true, false, false },
+                { false, true, false, true, false },
+                { true, false, false, true, true },
+                { true, false, true, false, false },
+                { false, true, true, false, false },
+                { false, true, false, true, true },
+                { true, false, false, true, true },
+                { true, false, true, false, false },
+                { false, true, false, false, false }
+            });
+
+            // Level 3 - diamond bands widening the play area
+            _levels.Add(new bool[12, 6]
+            {
+                { false, false, true, false, false, false },
+                { false, true, true, true, false, true },
+                { true, true, true, true, true, true },
+                { true, true, true, true, true, false },
+                { false, true, true, true, false, false },
+                { false, false, true, false, false, false },
+                { false, false, false, false, false, false },
+                { false, true, false, true, false, false },
+                { true, true, true, true, true, false },
+                { true, true, true, true, true, true },
+                { false, true, true, true, false, true },
+                { false, false, true, false, false, false }
+            });
+
+            // Level 4 - dense ladder before the full wall
+            _levels.Add(new bool[12, 6]
             {
                 { true, true, true, true, true, true },
+                { true, false, true, true, false, true },
+                { false, false, true, true, true, false },
+                { true, true, true, false, true, true },
+                { true, true, false, true, true, true },
+                { true, true, false, true, true, true },
                 { true, true, true, true, true, true },
                 { true, true, true, true, true, true },
-                { true, true, true, true, true, true },
+                { true, true, false, false, false, true },
+                { false, false, true, true, true, false },
+                { true, false, true, true, false, true },
+                { true, true, true, true, true, true }
+            });
+
+            // Level 5 - hard (solid block of bricks)
+            _levels.Add(new bool[12, 6]
+            {
                 { true, true, true, true, true, true },
                 { true, true, true, true, true, true },
                 { true, true, true, true, true, true },
