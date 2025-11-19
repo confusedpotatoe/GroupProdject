@@ -50,7 +50,7 @@ namespace BrickBreaker.Storage
             {
                 if (File.Exists(Path.Combine(dir, "BrickBreaker.sln")))
                 {
-                    return dir; 
+                    return dir;
                 }
 
                 dir = Directory.GetParent(dir)?.FullName;

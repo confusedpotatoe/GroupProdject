@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 namespace BrickBreaker.UI.Ui.Enums
 {
     public enum LoginMenuChoice
-        
+
     {
         QuickPlay,
         Register,
         Login,
         Leaderboard,
         Exit,
-        
+
     }
 }

@@ -6,19 +6,19 @@ using System.Threading.Tasks;
 
 
 namespace BrickBreaker.UI.Ui.Interfaces
+{
+
+    public interface IConsoleDialogs
     {
-   
-            public interface IConsoleDialogs
-            {
-                (string Username, string Password) PromptCredentials();
-                string PromptNewUsername();
-                string PromptNewPassword();
+        (string Username, string Password) PromptCredentials();
+        string PromptNewUsername();
+        string PromptNewPassword();
 
-                void ShowMessage(string message);
-                void Pause();
+        void ShowMessage(string message);
+        void Pause();
 
-                void ShowLeaderboard(IEnumerable<(string Username, int Score, DateTimeOffset At)> entries);
-            }
-        }
+        void ShowLeaderboard(IEnumerable<(string Username, int Score, DateTimeOffset At)> entries);
+    }
+}
 
-    
+

@@ -19,7 +19,7 @@ namespace BrickBreaker.UI.Ui.SpecterConsole
         {
             // Clear console for a clean display
             AnsiConsole.Clear();
-           
+
             // Display menu using Spectre.Console
             var choice = _menuHelper.ShowMenu<LoginMenuChoice>("Brick Breaker");
 

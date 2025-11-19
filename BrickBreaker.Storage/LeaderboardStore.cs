@@ -22,7 +22,7 @@ public sealed class LeaderboardStore : ILeaderboardStore
     }
     public void Add(ScoreEntry entry)
     {
-       if (entry is null) throw new ArgumentException(nameof(entry));
+        if (entry is null) throw new ArgumentException(nameof(entry));
 
         const string sql = $"""
         INSERT INTO {TableName} (username, score, at)

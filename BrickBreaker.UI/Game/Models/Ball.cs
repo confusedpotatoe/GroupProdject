@@ -4,7 +4,7 @@
 
     public class Ball
     {
-        
+
         public int X { get; private set; } // Ball's horizontal position
         public int Y { get; private set; } // Ball's vertical position
         public double Vx { get; private set; } // Ball's horizontal velocity

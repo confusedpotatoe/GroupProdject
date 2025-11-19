@@ -9,7 +9,8 @@ namespace BrickBreaker.UI.Ui.SpecterConsole
 {
     public class Header
     {
-        public void TitleHeader() {
+        public void TitleHeader()
+        {
             AnsiConsole.Write(
                 new FigletText("Brick Breaker")
                     .Centered()

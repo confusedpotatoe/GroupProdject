@@ -89,17 +89,17 @@ namespace BrickBreaker.Game                        // Main game namespace
                 }
 
                 // RENDER CALL: draw the game frame to the console
-            bool paddleWarningBlinkOn = ShouldDrawPaddleWarning();
+                bool paddleWarningBlinkOn = ShouldDrawPaddleWarning();
 
-            _renderer.Render(
-                lives, score, _levelManager.CurrentLevelIndex, hitMultiplier, _paused,
-                _levelManager.Bricks,
-                paddleX,
-                _paddleWidth,
-                paddleWarningBlinkOn,
-                balls,
-                powerUps,
-                scorePops);
+                _renderer.Render(
+                    lives, score, _levelManager.CurrentLevelIndex, hitMultiplier, _paused,
+                    _levelManager.Bricks,
+                    paddleX,
+                    _paddleWidth,
+                    paddleWarningBlinkOn,
+                    balls,
+                    powerUps,
+                    scorePops);
 
                 var sleep = targetDt - (sw.Elapsed - now);                      // Calculate how long to sleep until next frame
                 if (sleep > TimeSpan.Zero) Thread.Sleep(sleep);                 // Frame delay

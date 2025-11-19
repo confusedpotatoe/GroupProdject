@@ -12,7 +12,7 @@ namespace BrickBreaker.UI.Ui
 {
     public class MenuHelper
     {
-        public T ShowMenu<T>(string title,string? welcomeMessage = null, Color? titleColor = null, Color? highlightColor = null) where T : Enum
+        public T ShowMenu<T>(string title, string? welcomeMessage = null, Color? titleColor = null, Color? highlightColor = null) where T : Enum
         {
             // Set colors
             var tColor = titleColor ?? Color.Orange1;
@@ -52,7 +52,7 @@ namespace BrickBreaker.UI.Ui
                     })
             );
 
-            
+
         }
     }
 }

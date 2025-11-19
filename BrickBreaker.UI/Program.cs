@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 class Program
 {
-    static string? currentUser = null ;
+    static string? currentUser = null;
     private static Leaderboard _lb = null!;
     private static Auth _auth = null!;
     private static bool _databaseAvailable = false;
@@ -102,7 +102,7 @@ class Program
     // Gameplay Menu Handler
     // =========================
     static AppState HandleGameplayMenu()
-    { 
+    {
         GameplayMenuChoice choice = _gameplayMenu.Show(currentUser ?? "guest");
 
         switch (choice)
@@ -176,7 +176,7 @@ class Program
         username = (username ?? "").Trim();
 
         // Checks so username is not empty 
-        if(username.Length == 0)
+        if (username.Length == 0)
         {
             _dialogs.ShowMessage("Username can't be empty.");
             return;
@@ -241,25 +241,25 @@ class Program
         return false;
     }
 
-        static void ShowLeaderboard()
+    static void ShowLeaderboard()
+    {
+        AnsiConsole.Progress()
+        .Columns(new ProgressColumn[]
         {
-            AnsiConsole.Progress()
-            .Columns(new ProgressColumn[]
-            {
                 new TaskDescriptionColumn(),
                 new ProgressBarColumn(),
                 new PercentageColumn(),
                 new SpinnerColumn()
-            })
-        .Start(ctx =>
+        })
+    .Start(ctx =>
+        {
+            var task = ctx.AddTask("[green]Loading Scores[/]", maxValue: 100);
+            while (!ctx.IsFinished)
             {
-                var task = ctx.AddTask("[green]Loading Scores[/]", maxValue: 100);
-                while (!ctx.IsFinished)
-                {
-                    task.Increment(4);
-                    Thread.Sleep(40);
-                }
-            });
+                task.Increment(4);
+                Thread.Sleep(40);
+            }
+        });
 
 
         AnsiConsole.Clear();
