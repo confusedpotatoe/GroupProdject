@@ -7,12 +7,12 @@ namespace BrickBreaker
         public int LatestScore => score;
 
         // --- Game constants ---
-        private const int WindowWidth = 800;            // Width of the game window
-        private const int WindowHeight = 800;           // Height of the game window
+        private const int WindowWidth = 1920;            // Width of the game window
+        private const int WindowHeight = 1080;           // Height of the game window
         private const int BallRadius = 7;                // Radius of the ball
         private int PaddleWidth = 100;                    // Width of the paddle
         private const int PaddleHeight = 20;              // Height of the paddle
-        private const double PaddleSpeed = 13;            // Speed at which paddle moves
+        private const double PaddleSpeed = 20;            // Speed at which paddle moves
         private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
         private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
         private const int BrickRows = 7;                   // Number of brick rows
@@ -139,16 +139,13 @@ namespace BrickBreaker
             DrawPaddle(g);
             DrawBalls(g);
 
+            Image ballImage = Image.FromFile("assets/bild.png");
+
             // Draw each ball (redundant here due to DrawBalls method but kept)
             foreach (var ball in balls)
             {
-                Rectangle ballRect = new Rectangle(ball.X, ball.Y, ball.Radius * 2, ball.Radius * 2);
-                using (Brush ballBrush = new SolidBrush(Color.Red))
-                using (Pen ballPen = new Pen(Color.White, 2))
-                {
-                    g.FillEllipse(ballBrush, ballRect);
-                    g.DrawEllipse(ballPen, ballRect);
-                }
+                Rectangle ballRect = new Rectangle(ball.X, ball.Y, ball.Radius * 8, ball.Radius * 8);
+                g.DrawImage(ballImage, ballRect);
             }
 
             // Draw any active power ups
@@ -377,7 +374,7 @@ namespace BrickBreaker
                     double paddleCenter = paddleX + PaddleWidth / 2.0;
                     double hitPos = (ballCenter - paddleCenter) / (PaddleWidth / 2.0);
 
-                    double BallSpeed = 7.0;                       // Fixed ball speed after bounce
+                    double BallSpeed = 12.0;                       // Fixed ball speed after bounce
                     double maxHorizontal = BallSpeed * 0.8;       // Max horizontal velocity component
                     double vx = hitPos * maxHorizontal;           // Horizontal velocity proportional to hit position
                     double vy = -Math.Sqrt(BallSpeed * BallSpeed - vx * vx); // Vertical velocity (upwards)

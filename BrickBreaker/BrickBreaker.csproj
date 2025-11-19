@@ -13,4 +13,10 @@
     <ProjectReference Include="../BrickBreaker.Core/BrickBreaker.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Assets\bild.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
