@@ -1,11 +1,7 @@
-/*﻿ name: Notify Discord (with GIF)
+name: Notify Discord (with GIF)
 
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    types: [opened, closed]
   workflow_dispatch:
 
 jobs:
@@ -56,4 +52,4 @@ jobs:
           title: "Ny Pull Request öppnad"
           description: |
             📝 PR #${{ github.event.pull_request.number }} – ${{ github.event.pull_request.title }}
-          color: "#3498db"*/
+          color: "#3498db"
