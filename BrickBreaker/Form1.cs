@@ -39,6 +39,7 @@ namespace BrickBreaker
         private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
         private Random rand = new Random();                 // Random number generator for colors/powerups
         private bool isGameOver = false;                    // Game over state
+        private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
         private double elapsedSeconds = 0;                  // Total elapsed time in seconds
 
         // Paddle movement variables
