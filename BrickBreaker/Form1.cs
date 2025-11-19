@@ -4,6 +4,10 @@ namespace BrickBreaker
 {
     public partial class Form1 : Form
     {
+        public event EventHandler<int>? GameFinished;
+        public bool CloseOnGameOver { get; set; }
+        public int LatestScore => score;
+
         // --- Game constants ---
         private const int WindowWidth = 800; 
         private const int WindowHeight = 800;
@@ -35,6 +39,7 @@ namespace BrickBreaker
         private List<ScorePopup> scorePopups = new List<ScorePopup>();
         private Random rand = new Random();
         private bool isGameOver = false;
+        private bool gameFinishedRaised = false;
         private double elapsedSeconds = 0;
 
 
@@ -284,7 +289,7 @@ namespace BrickBreaker
                     balls.Remove(ball);
                     if (balls.Count == 0)
                     {
-                        isGameOver = true;
+                        TriggerGameOver();
                         return;
                     }
                     continue;
@@ -414,11 +419,13 @@ namespace BrickBreaker
                 brick.IsVisible = true;
 
 
+            gameTimer?.Start();
+            gameFinishedRaised = false;
+            isGameOver = false;
 
             score = 0;
             brickStreak = 0;
             scoreMultiplier = 1;
-            isGameOver = false;
             elapsedSeconds = 0;
 
             // Center paddle
@@ -439,6 +446,35 @@ namespace BrickBreaker
         {
             if (e.KeyCode == Keys.Left) leftPressed = false;
             if (e.KeyCode == Keys.Right) rightPressed = false;
+        }
+
+        private void TriggerGameOver()
+        {
+            if (isGameOver)
+            {
+                return;
+            }
+
+            isGameOver = true;
+            gameTimer?.Stop();
+            RaiseGameFinished();
+            Invalidate();
+        }
+
+        private void RaiseGameFinished()
+        {
+            if (gameFinishedRaised)
+            {
+                return;
+            }
+
+            gameFinishedRaised = true;
+            GameFinished?.Invoke(this, score);
+
+            if (CloseOnGameOver)
+            {
+                BeginInvoke(new Action(Close));
+            }
         }
     }
 }

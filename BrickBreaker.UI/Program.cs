@@ -135,7 +135,7 @@ class Program
     static AppState HandlePlaying()
     {
         AnsiConsole.Clear();
-        IGame game = new BrickBreakerGame();
+        IGame game = new BrickBreaker.WinFormsBrickBreakerGame();
         int score = game.Run();
 
         int lowerLine = Console.WindowHeight - 4;
@@ -182,7 +182,7 @@ class Program
             return;
         }
 
-        // Checks so username don´t already exists
+        // Checks so username donÂ´t already exists
         if (_auth.UsernameExists(username))
         {
             _dialogs.ShowMessage("Username already exists.");
