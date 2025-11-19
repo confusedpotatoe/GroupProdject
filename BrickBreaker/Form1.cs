@@ -24,6 +24,8 @@ namespace BrickBreaker
         private int brickStreak = 0;                        // Count of bricks hit in current ball bounce streak
         private int scoreMultiplier = 1;                    // Score multiplier based on streak
         private bool isPaused = false;                      // Game pause status
+        private double timeSinceColorChange = 0; // Tid sedan senaste färgbyte
+        private double colorChangeInterval = 2; // Byte intervall i sekunder
 
         // --- Game state ---
         private System.Windows.Forms.Timer gameTimer;      // Timer controlling game update ticks
@@ -163,6 +165,8 @@ namespace BrickBreaker
                 SizeF sz = g.MeasureString(pauseText, fontGameOver);
                 float px = (ClientSize.Width - sz.Width) / 2, py = (ClientSize.Height - sz.Height) / 2 + 45;
                 g.DrawString(pauseText, fontGameOver, Brushes.Cyan, px, py);
+                elapsedSeconds += gameTimer.Interval / 1000.0;
+                timeSinceColorChange += gameTimer.Interval / 1000.0;
             }
         }
 
@@ -235,15 +239,29 @@ namespace BrickBreaker
         // Main game logic executed on each timer tick (~60 times per second)
         private void GameTimer_Tick(object sender, EventArgs e)
         {
+
+            if (!isGameOver && !isPaused) 
+            {
+                elapsedSeconds += gameTimer.Interval / 1000.0; 
+                timeSinceColorChange += gameTimer.Interval / 1000.0;
+            }
+
+            if (timeSinceColorChange >= colorChangeInterval)
+            {
+                foreach (var brick in bricks)
+                {
+                    if (brick.IsVisible)
+                    {
+                        brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+                    }
+                }
+                timeSinceColorChange = 0; // Nollställ timern
+            }
             // Move paddle left or right if respective arrow keys are pressed, constrained within play area horizontally
             if (leftPressed && paddleX > playAreaRect.Left)
                 paddleX -= PaddleSpeed;
             if (rightPressed && paddleX < playAreaRect.Right - PaddleWidth)
                 paddleX += PaddleSpeed;
-
-            // Increment elapsed time if game is running and not paused
-            if (!isGameOver && !isPaused)
-                elapsedSeconds += gameTimer.Interval / 1000.0;
 
             // If paused, just redraw and skip the rest of the update logic
             if (isPaused)
@@ -301,6 +319,7 @@ namespace BrickBreaker
                 // Ball and brick collision detection
                 foreach (var brick in bricks)
                 {
+
                     if (brick.IsVisible && BallHitsRect(ball, brick))
                     {
                         brick.IsVisible = false;          // Hide brick if hit
@@ -317,8 +336,10 @@ namespace BrickBreaker
                             powerUps.Add(new PowerUp(brick.X + brick.Width / 2, brick.Y + brick.Height / 2, powerUpType));
                         }
 
+
                         break;  // Only one brick hit per frame per ball to avoid multiple hits
                     }
+
                 }
 
                 // Ball and wall collisions: left, right, top walls bounce and reset streak/multiplier
@@ -363,7 +384,6 @@ namespace BrickBreaker
                     scoreMultiplier = 1;
                 }
             }
-
             // Invalidate form to trigger repaint with updated game state
             Invalidate();
         }
