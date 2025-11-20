@@ -10,10 +10,12 @@ namespace BrickBreaker
         public bool CloseOnGameOver { get; set; }
         public int LatestScore => score;
 
-        // --- Game constants ---
-        private const int WindowWidth = 800;            // Width of the game window
-        private const int WindowHeight = 800;           // Height of the game window
+        // --- Window constants ---
+        private int WindowWidth = 800;            // Width of the game window
+        private int WindowHeight = 800;           // Height of the game window
         private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
+        private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
+        private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
 
         // --- Ball constants ---
         private const int BallRadius = 7;                // Radius of the ball
@@ -24,8 +26,6 @@ namespace BrickBreaker
         private int PaddleWidth = 100;                    // Width of the paddle
         private const int PaddleHeight = 20;              // Height of the paddle
         private const double PaddleSpeed = 13;            // Speed at which paddle moves
-        private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
-        private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
         private int originalPaddleWidth;                   // Store original paddle width for power-up resets
 
         // Paddle blinking effect variables
@@ -49,6 +49,8 @@ namespace BrickBreaker
         private const int BrickStartY = 40;                 // Starting Y position of first brick
         private const int BrickXSpacing = 70;               // Horizontal spacing between bricks
         private const int BrickYSpacing = 30;               // Vertical spacing between bricks
+        private double timeSinceColorChange = 0;            // Timer for brick color changes
+        private double colorChangeInterval = 2;             // Interval in seconds for brick color changes
 
         // --- Game variables ---
         private int score = 0;                              // Current player score
@@ -58,8 +60,6 @@ namespace BrickBreaker
         private bool isGameOver = false;                    // Game over state
         private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
         private double elapsedSeconds = 0;                  // Total elapsed time in seconds
-        private double timeSinceColorChange = 0; 
-        private double colorChangeInterval = 2; 
 
         // --- Game state ---
         private System.Windows.Forms.Timer gameTimer;      // Timer controlling game update ticks
