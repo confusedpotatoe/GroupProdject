@@ -66,6 +66,7 @@ namespace BrickBreaker
         private int scoreMultiplier = 1;                    // Score multiplier based on streak
         private bool isPaused = false;                      // Game pause status
         private bool isGameOver = false;                    // Game over state
+        private int currentLevel = 1;                      // Current level
         private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
         private double elapsedSeconds = 0;                  // Total elapsed time in seconds
 
@@ -105,33 +106,10 @@ namespace BrickBreaker
             paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
             originalPaddleWidth = PaddleWidth;
 
-
-            // Setup initial ball just above the paddle, values for velocity and radius
-            balls.Clear();
-            balls.Add(new Ball(
-                x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
-                y: paddleY - 50,
-                vx: 6, vy: 6,
-                radius: BallRadius
-            ));
-
             // Initialize bricks list and create bricks with colors randomized
             bricks = new List<Brick>();
-            for (int row = 0; row < BrickRows; row++)
-            {
-                for (int col = 0; col < BrickCols; col++)
-                {
-                    bricks.Add(new Brick
-                    {
-                        X = BrickStartX + col * BrickXSpacing,
-                        Y = BrickStartY + row * BrickYSpacing,
-                        Width = BrickWidth,
-                        Height = BrickHeight,
-                        IsVisible = true,
-                        BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256))
-                    });
-                }
-            }
+
+            StartLevel(1); // Start at level 1
 
             // Setup the timer for game updates at approx 60 FPS (tick every ~16ms)
             gameTimer = new System.Windows.Forms.Timer();
@@ -187,6 +165,82 @@ namespace BrickBreaker
                 float y = paddleY - 80;
                 g.DrawString(launchText, fontLaunch, Brushes.White, x, y);
             }
+        }
+
+        // TODO: Implement so medium difficulty has some moving bricks, and hard has some indestructible ones, or more hits aswell, and moving bricks
+
+        // Initializes and starts a level with a specified difficulty
+        private void StartLevel(int level)
+        {
+            currentLevel = level;
+            bricks.Clear();
+            balls.Clear();
+            powerUps.Clear();
+            scorePopups.Clear();
+
+            // Determine difficulty (Brick Count)
+            int bricksToSpawn = 0;
+            switch (currentLevel)
+            {
+                case 1: bricksToSpawn = 15; break; // Easy
+                case 2: bricksToSpawn = 35; break; // Medium
+                case 3: bricksToSpawn = 60; break; // Hard
+                default: bricksToSpawn = 15; break; // Fallback to easy
+            }
+
+
+            // list of points so we never pick the same spot twice (no overlapping)
+            List<Point> availableSlots = new List<Point>();
+            for (int row = 0; row < BrickRows; row++)
+            {
+                for (int col = 0; col < BrickCols; col++)
+                {
+                    availableSlots.Add(new Point(col, row));
+                }
+            }
+
+            // Randomly pick slots from the list until we reach the count
+            for (int i = 0; i < bricksToSpawn; i++)
+            {
+                if (availableSlots.Count == 0) break; // Safety check
+
+                // Pick a random index from available slots
+                int index = rand.Next(availableSlots.Count);
+                Point slot = availableSlots[index];
+
+                // Create the brick at that slot
+                bricks.Add(new Brick
+                {
+                    X = BrickStartX + slot.X * BrickXSpacing,
+                    Y = BrickStartY + slot.Y * BrickYSpacing,
+                    Width = BrickWidth,
+                    Height = BrickHeight,
+                    IsVisible = true,
+                    BrickColor = Color.FromArgb(rand.Next(50, 255), rand.Next(50, 255), rand.Next(50, 255))
+                });
+
+                // Remove this slot so we dont pick it again
+                availableSlots.RemoveAt(index);
+            }
+
+            //Reset Player Position
+            ResetBallAndPaddle();
+        }
+
+        // Helper to reset ball/paddle (Moved out so we can reuse it)
+        private void ResetBallAndPaddle()
+        {
+            PaddleWidth = originalPaddleWidth;
+            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
+
+            balls.Clear();
+            balls.Add(new Ball(
+                x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
+                y: paddleY - 50,
+                vx: 0, vy: 0, // Stopped
+                radius: BallRadius
+            ));
+            ballReadyToShoot = true;
         }
 
         // Activates the effect of a collected power-up based on type
@@ -454,6 +508,24 @@ namespace BrickBreaker
                     paddleBlinkCounter = 0;
                 }
             }
+            bool allBricksDestroyed = true;
+            foreach (var b in bricks)
+            {
+                if (b.IsVisible)
+                {
+                    allBricksDestroyed = false;
+                    break;
+                }
+            }
+
+            if (allBricksDestroyed)
+            {
+                currentLevel++;
+                if (currentLevel > 3) currentLevel = 1;
+                StartLevel(currentLevel);
+                Invalidate();
+                return;
+            }
 
             // Redraw screen
             Invalidate();
@@ -546,32 +618,8 @@ namespace BrickBreaker
             gameFinishedRaised = false;
             gameTimer.Start(); // Important: Start the timer again!
 
-            // 2. Reset Bricks
-            foreach (var brick in bricks)
-            {
-                brick.IsVisible = true;
-                // Optional: Reshuffle colors on restart
-                brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-            }
+            StartLevel(1);
 
-            // 3. Clear old objects
-            powerUps.Clear();
-            scorePopups.Clear();
-            balls.Clear();
-
-            // 4. Reset Ball and Paddle
-            PaddleWidth = originalPaddleWidth; // Reset paddle size
-            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0; // Center paddle
-
-            // Add the starting ball
-            balls.Add(new Ball(
-                x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
-                y: paddleY - 50,
-                vx: 0, vy: 0,
-                radius: BallRadius
-            ));
-
-            ballReadyToShoot = true;
             Invalidate();
         }
 
