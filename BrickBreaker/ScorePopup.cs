@@ -6,9 +6,9 @@ public class ScorePopup
     public int X { get; private set; }
     public int Y { get; private set; }
     public int Value { get; private set; }
-    public int Lifetime { get; private set; } = 40; // ticks to display (adjust as you like)
+    public int Lifetime { get; private set; } = 30; // Slightly shorter life for snappiness
     private int _age = 0;
-    private float _riseSpeed = 1.5f;
+    private float _riseSpeed = 2.0f; // Slightly faster rise
 
     public ScorePopup(int x, int y, int value)
     {
@@ -27,17 +27,30 @@ public class ScorePopup
 
     public void Draw(Graphics g)
     {
-        // Fade out near end of life
+        // Calculate transparency
         int alpha = 255;
         if (_age > Lifetime - 10)
             alpha = (int)(255 * ((float)(Lifetime - _age) / 10f));
 
-        Color color = Color.FromArgb(alpha, Color.Yellow);
-        using (Brush brush = new SolidBrush(color))
+        // Create colors
+        Color mainColor = Color.FromArgb(alpha, Color.Yellow);
+        Color shadowColor = Color.FromArgb(alpha, Color.Black);
+
+        using (Font font = new Font("Arial", 14, FontStyle.Bold))
         {
-            g.DrawString("+" + Value,
-                         new Font("Arial", 13, FontStyle.Bold),
-                         brush, X, Y);
+            string text = "+" + Value;
+
+            // 1. Draw Shadow (offset by 2 pixels)
+            using (Brush shadowBrush = new SolidBrush(shadowColor))
+            {
+                g.DrawString(text, font, shadowBrush, X + 2, Y + 2);
+            }
+
+            // 2. Draw Main Text
+            using (Brush mainBrush = new SolidBrush(mainColor))
+            {
+                g.DrawString(text, font, mainBrush, X, Y);
+            }
         }
     }
 }

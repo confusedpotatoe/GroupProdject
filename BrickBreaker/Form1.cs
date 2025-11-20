@@ -138,33 +138,6 @@ namespace BrickBreaker
             this.KeyUp += Form1_KeyUp;
         }
 
-        private void ResetBallToPaddle()
-        {
-            var mainBall = balls.FirstOrDefault();
-            if (mainBall != null)
-            {
-                mainBall.X = (int)(paddleX + PaddleWidth / 2 - BallRadius);
-                mainBall.Y = paddleY - 50; // Position just above paddle
-                mainBall.VX = 0; // waiting to shoot
-                mainBall.VY = 0; // waiting to shoot
-                ballReadyToShoot = true; // set to true for shooting later
-            }
-            else
-            {
-                // create new ball if none exists
-                balls.Clear();
-                balls.Add(new Ball(
-                    x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
-                    y: paddleY - 50,
-                    vx: 0, vy: 0,
-                    radius: BallRadius
-                ));
-                ballReadyToShoot = true;
-            }
-        }
-
-
-
         // Paint event handler to render the game elements each frame
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
@@ -193,18 +166,6 @@ namespace BrickBreaker
             DrawPaddle(g);
             DrawBalls(g);
 
-            // Draw each ball (redundant here due to DrawBalls method but kept)
-            foreach (var ball in balls)
-            {
-                Rectangle ballRect = new Rectangle(ball.X, ball.Y, ball.Radius * 2, ball.Radius * 2);
-                using (Brush ballBrush = new SolidBrush(Color.Red))
-                using (Pen ballPen = new Pen(Color.White, 2))
-                {
-                    g.FillEllipse(ballBrush, ballRect);
-                    g.DrawEllipse(ballPen, ballRect);
-                }
-            }
-
             // Draw any active power ups
             foreach (var p in powerUps)
                 p.Draw(e.Graphics);
@@ -230,6 +191,10 @@ namespace BrickBreaker
                 {
                     g.DrawString(launchText, fontLaunch, brush, x, y);
                 }
+            }
+            foreach (var popup in scorePopups)
+            {
+                popup.Draw(g);
             }
 
 
@@ -319,6 +284,15 @@ namespace BrickBreaker
                 timeSinceColorChange += gameTimer.Interval / 1000.0;
             }
 
+            for (int i = scorePopups.Count - 1; i >= 0; i--)
+            {
+                scorePopups[i].Update();
+                if (!scorePopups[i].IsAlive)
+                {
+                    scorePopups.RemoveAt(i);
+                }
+            }
+
 
             if (timeSinceColorChange >= colorChangeInterval)
             {
@@ -347,11 +321,14 @@ namespace BrickBreaker
             // Update positions of falling powerups, check for off-screen removal or paddle collection
             foreach (var powerUp in powerUps.ToList())
             {
+
                 powerUp.UpdatePosition();
 
-                // Remove powerups that fall below bottom of play area
                 if (powerUp.Y > playAreaRect.Bottom)
+                {
                     powerUps.Remove(powerUp);
+                    continue;
+                }
 
                 // Check collision between paddle and powerup
                 Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight);
@@ -392,15 +369,6 @@ namespace BrickBreaker
 
                 }
 
-                // Update powerups again within ball loop (may be redundant)
-                foreach (var powerUp in powerUps.ToList())
-                {
-                    powerUp.UpdatePosition();
-
-                    // Remove powerups going below play area
-                    if (powerUp.Y > playAreaRect.Bottom)
-                        powerUps.Remove(powerUp);
-                }
 
                 // Ball and brick collision detection
                 foreach (var brick in bricks)
@@ -528,14 +496,8 @@ namespace BrickBreaker
             // If game over and spacebar pressed, restart game
             if (isGameOver && e.KeyCode == Keys.Space)
             {
+
                 RestartGame();
-                balls.Clear();
-                balls.Add(new Ball(
-                    x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
-                    y: paddleY - 50,
-                    vx: 0, vy: 0,
-                    radius: BallRadius
-                ));
                 ballReadyToShoot = true; // Ensure ball waiting after restart
 
             }
@@ -560,33 +522,6 @@ namespace BrickBreaker
 
         }
 
-        // Restart the game state to initial values
-        private void RestartGame()
-        {
-            // Make all bricks visible again
-            foreach (var brick in bricks)
-                brick.IsVisible = true;
-
-            score = 0;               // Reset score
-            brickStreak = 0;         // Reset streak count
-            scoreMultiplier = 1;     // Reset score multiplier
-            isGameOver = false;      // Clear game over flag
-            elapsedSeconds = 0;      // Reset elapsed time
-
-            // Re-center paddle at start position
-            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
-            paddleY = playAreaRect.Bottom - PaddleHeight - 10;
-
-            // Clear all existing balls and add new single ball above paddle
-            balls.Clear();
-            balls.Add(new Ball(
-                x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
-                y: paddleY - 50,
-                vx: 6, vy: 6,
-                radius: BallRadius
-            ));
-        }
-
         // Keyboard handler for key release events
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
@@ -607,6 +542,45 @@ namespace BrickBreaker
             RaiseGameFinished();
             Invalidate();
         }
+        private void RestartGame()
+        {
+            // 1. Reset Game State
+            score = 0;
+            brickStreak = 0;
+            scoreMultiplier = 1;
+            elapsedSeconds = 0;
+            isGameOver = false;
+            gameFinishedRaised = false;
+            gameTimer.Start(); // Important: Start the timer again!
+
+            // 2. Reset Bricks
+            foreach (var brick in bricks)
+            {
+                brick.IsVisible = true;
+                // Optional: Reshuffle colors on restart
+                brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+            }
+
+            // 3. Clear old objects
+            powerUps.Clear();
+            scorePopups.Clear();
+            balls.Clear();
+
+            // 4. Reset Ball and Paddle
+            PaddleWidth = originalPaddleWidth; // Reset paddle size
+            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0; // Center paddle
+
+            // Add the starting ball
+            balls.Add(new Ball(
+                x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
+                y: paddleY - 50,
+                vx: 0, vy: 0,
+                radius: BallRadius
+            ));
+
+            ballReadyToShoot = true;
+            Invalidate();
+        }
 
         private void RaiseGameFinished()
         {
@@ -618,10 +592,6 @@ namespace BrickBreaker
             gameFinishedRaised = true;
             GameFinished?.Invoke(this, score);
 
-            if (CloseOnGameOver)
-            {
-                BeginInvoke(new Action(Close));
-            }
         }
     }
 }
