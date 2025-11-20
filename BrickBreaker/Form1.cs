@@ -24,6 +24,14 @@ namespace BrickBreaker
         private const double PaddleSpeed = 13;            // Speed at which paddle moves
         private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
         private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
+        private int originalPaddleWidth;                   // Store original paddle width for power-up resets
+
+        // Paddle blinking effect variables
+        private bool isPaddleBlinking = false;
+        private int paddleBlinkCounter = 0;
+        private Color normalPaddleColor = Color.FromArgb(36, 162, 255);
+        private Color blinkPaddleColor = Color.OrangeRed;
+        private int paddleExtenderTicksLeft = 0; // Number of ticks left for paddle extender effect
 
         // Paddle movement variables
         private double paddleX;                              // Current X position of the paddle (floating point for smooth movement)
@@ -85,6 +93,9 @@ namespace BrickBreaker
             int paddleBottomMargin = 10;
             paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
             paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
+            PaddleWidth = 100;              // Initial paddle width
+            originalPaddleWidth = PaddleWidth;
+
 
             // Setup initial ball just above the paddle, values for velocity and radius
             balls.Clear();
@@ -124,6 +135,7 @@ namespace BrickBreaker
             this.KeyDown += Form1_KeyDown;
             this.KeyUp += Form1_KeyUp;
         }
+
 
         // Paint event handler to render the game elements each frame
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -204,8 +216,9 @@ namespace BrickBreaker
                     }
                     break;
                 case PowerUpType.PaddleExtender:
-                    PaddleWidth += 30; // Increase paddle width
-                    // Could add timer here to revert paddle size after some duration
+                    PaddleWidth += 50; // Increase paddle width
+                    paddleExtenderTicksLeft = 312; // 5000ms/16ms ≈ 312 ticks (for 5 seconds)
+                    isPaddleBlinking = false;
                     break;
             }
         }
@@ -231,14 +244,20 @@ namespace BrickBreaker
         // Draw the paddle graphics at current position
         private void DrawPaddle(Graphics g)
         {
-            Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight);
-            using (var paddleBrush = new SolidBrush(Color.FromArgb(36, 162, 255))) // Paddle fill color
-            using (var paddlePen = new Pen(Color.Blue, 2))                        // Paddle border color and thickness
+            Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight); // Paddle rectangle
+
+            Color drawColor = normalPaddleColor; // Default paddle color
+            if (isPaddleBlinking && (paddleBlinkCounter / 8) % 2 == 0) // Blink every 8 ticks
+                drawColor = blinkPaddleColor; // Alternate color for blinking effect
+
+            using (var paddleBrush = new SolidBrush(drawColor)) // Create brush with determined color
+            using (var paddlePen = new Pen(Color.Blue, 2)) // Pen for paddle border
             {
-                g.FillRectangle(paddleBrush, paddleRect);
-                g.DrawRectangle(paddlePen, paddleRect);
+                g.FillRectangle(paddleBrush, paddleRect); // Draw filled paddle
+                g.DrawRectangle(paddlePen, paddleRect); // Draw paddle border
             }
         }
+
 
         // Draw all balls currently in play
         private void DrawBalls(Graphics g)
@@ -401,6 +420,30 @@ namespace BrickBreaker
 
                     brickStreak = 0;          // Reset streak and multiplier on paddle hit
                     scoreMultiplier = 1;
+                }
+                if (paddleExtenderTicksLeft > 0)
+                {
+                    paddleExtenderTicksLeft--;
+
+                    // Begin blinking in the final second (final 62 ticks)
+                    if (paddleExtenderTicksLeft < 62)
+                    {
+                        isPaddleBlinking = true;
+                        paddleBlinkCounter++;
+                    }
+                    else
+                    {
+                        isPaddleBlinking = false;
+                        paddleBlinkCounter = 0;
+                    }
+
+                    // Paddle extender expired, reset width
+                    if (paddleExtenderTicksLeft == 0)
+                    {
+                        PaddleWidth = originalPaddleWidth;
+                        isPaddleBlinking = false;
+                        paddleBlinkCounter = 0;
+                    }
                 }
             }
             // Invalidate form to trigger repaint with updated game state

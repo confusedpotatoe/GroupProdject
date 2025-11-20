@@ -11,6 +11,8 @@ namespace BrickBreaker
         public int Width { get; set; }
         public int Height { get; set; }
 
+
+
         public Paddle(int x, int y, int width, int height)
         {
             X = x; Y = y; Width = width; Height = height;
