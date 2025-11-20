@@ -15,18 +15,26 @@ namespace BrickBreaker
         private int WindowHeight = 800;           // Height of the game window
         private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
         private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
-        private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
+
+
+        // --- Graphics Resources ---
+        private Font fontScore = new Font("Arial", 18, FontStyle.Bold);
+        private Font fontMultiplier = new Font("Arial", 16, FontStyle.Bold);
+        private Font fontGameOver = new Font("Arial", 20, FontStyle.Bold);
+        private Font fontLaunch = new Font("Arial", 16, FontStyle.Bold);
+        private Pen brickBorderPen = new Pen(Color.DarkGray, 1);
 
         // --- Ball constants ---
         private const int BallRadius = 7;                // Radius of the ball
         private bool ballReadyToShoot = true; // Indicates if ball is waiting on paddle to be shot
-
 
         // --- Paddle constants ---
         private int PaddleWidth = 100;                    // Width of the paddle
         private const int PaddleHeight = 20;              // Height of the paddle
         private const double PaddleSpeed = 13;            // Speed at which paddle moves
         private int originalPaddleWidth;                   // Store original paddle width for power-up resets
+        private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
+
 
         // Paddle blinking effect variables
         private bool isPaddleBlinking = false;
@@ -95,7 +103,6 @@ namespace BrickBreaker
             int paddleBottomMargin = 10;
             paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
             paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
-            PaddleWidth = 100;              // Initial paddle width
             originalPaddleWidth = PaddleWidth;
 
 
@@ -142,35 +149,29 @@ namespace BrickBreaker
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            g.Clear(Color.Black);  // Clear background to black
+            g.Clear(Color.Black);
 
-            // Fonts used for displaying score, multiplier, and game state messages
-            var fontScore = new Font("Arial", 18, FontStyle.Bold);
-            var fontMultiplier = new Font("Arial", 16, FontStyle.Bold);
-            var fontGameOver = new Font("Arial", 20, FontStyle.Bold);
-
-            // Format elapsedSeconds as minutes and seconds and draw time, score, multiplier labels
+            // 1. Draw HUD (Using the class-level fonts)
             int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60;
             g.DrawString($"Time: {minutes:D2}:{seconds:D2}", fontScore, Brushes.White, playAreaRect.Left + 420, playAreaRect.Top - 40);
             g.DrawString($"Score: {score}", fontScore, Brushes.Yellow, playAreaRect.Left, playAreaRect.Top - 40);
             g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 180, playAreaRect.Top - 40);
 
-            // Draw play area background with a dark color and white border
+            // 2. Draw Play Area
             using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
                 g.FillRectangle(bgBrush, playAreaRect);
             using (Pen borderPen = new Pen(Color.White, 4))
                 g.DrawRectangle(borderPen, playAreaRect);
 
-            // Draw bricks, paddle, and balls using helper methods
+            // 3. Draw Game Objects
             DrawBricks(g);
             DrawPaddle(g);
             DrawBalls(g);
 
-            // Draw any active power ups
-            foreach (var p in powerUps)
-                p.Draw(e.Graphics);
+            foreach (var p in powerUps) p.Draw(g);
+            foreach (var popup in scorePopups) popup.Draw(g);
 
-            // If game is over, display game over message centered on screen
+            // 4. Draw Game Over / Pause Text
             if (isGameOver)
             {
                 string overText = "Game Over! Press SPACE to restart";
@@ -178,27 +179,14 @@ namespace BrickBreaker
                 float cx = (ClientSize.Width - sz.Width) / 2, cy = (ClientSize.Height - sz.Height) / 2;
                 g.DrawString(overText, fontGameOver, Brushes.Red, cx, cy);
             }
-            // If paused (and not game over), display pause message
-            if (ballReadyToShoot && !isGameOver && !isPaused)
+            else if (ballReadyToShoot && !isPaused)
             {
                 string launchText = "Press UP ARROW to launch the ball";
-                var fontLaunch = new Font("Arial", 16, FontStyle.Bold);
                 SizeF textSize = g.MeasureString(launchText, fontLaunch);
                 float x = (ClientSize.Width - textSize.Width) / 2;
-                float y = paddleY - 80; // position above the paddle
-
-                using (Brush brush = new SolidBrush(Color.White))
-                {
-                    g.DrawString(launchText, fontLaunch, brush, x, y);
-                }
+                float y = paddleY - 80;
+                g.DrawString(launchText, fontLaunch, Brushes.White, x, y);
             }
-            foreach (var popup in scorePopups)
-            {
-                popup.Draw(g);
-            }
-
-
-
         }
 
         // Activates the effect of a collected power-up based on type
@@ -217,7 +205,7 @@ namespace BrickBreaker
                     break;
                 case PowerUpType.PaddleExtender:
                     PaddleWidth += 50; // Increase paddle width
-                    paddleExtenderTicksLeft = 312; // 5000ms/16ms ≈ 312 ticks (for 5 seconds)
+                    paddleExtenderTicksLeft = 300; // Lasts for 300 ticks (~5 seconds)
                     isPaddleBlinking = false;
                     break;
             }
@@ -230,12 +218,14 @@ namespace BrickBreaker
             {
                 if (brick.IsVisible)
                 {
+                    // We still need a new Brush because colors change per brick
                     using (SolidBrush bBrush = new SolidBrush(brick.BrickColor))
-                    using (Pen bPen = new Pen(Color.DarkGray, 1))
                     {
                         var r = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
-                        g.FillRectangle(bBrush, r);    // Fill brick rectangle with color
-                        g.DrawRectangle(bPen, r);      // Draw border around brick
+                        g.FillRectangle(bBrush, r);
+
+                        // Re-use the class-level pen (brickBorderPen) instead of creating a new one
+                        g.DrawRectangle(brickBorderPen, r);
                     }
                 }
             }
