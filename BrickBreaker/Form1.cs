@@ -1,8 +1,12 @@
+using System.ComponentModel;
+
 namespace BrickBreaker
 {
     public partial class Form1 : Form
     {
         public event EventHandler<int>? GameFinished;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [Browsable(false)]
         public bool CloseOnGameOver { get; set; }
         public int LatestScore => score;
 
