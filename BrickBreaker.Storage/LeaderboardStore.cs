@@ -8,9 +8,11 @@ namespace BrickBreaker.Storage;
 
 public sealed class LeaderboardStore : ILeaderboardStore
 {
+    //Declare the table name in the database and use the connectionstrin to connect to the database
     private const string TableName = "leaderboard";
     private readonly string _connectionString;
 
+    //Method makes sure there is always a PostGreSQL connection
     public LeaderboardStore(string connectionString)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -20,10 +22,13 @@ public sealed class LeaderboardStore : ILeaderboardStore
 
         _connectionString = connectionString;
     }
+
+    //Adds a highscore to the table leaderboard 
     public void Add(ScoreEntry entry)
     {
        if (entry is null) throw new ArgumentException(nameof(entry));
 
+       //insert values into the table
         const string sql = $"""
         INSERT INTO {TableName} (username, score, at)
         VALUES (@username, @score, @at);
@@ -31,6 +36,8 @@ public sealed class LeaderboardStore : ILeaderboardStore
 
         using var connection = new NpgsqlConnection(_connectionString);
         using var command = new NpgsqlCommand(sql, connection);
+
+        //takes data from entry. and sends it to the db
         command.Parameters.AddWithValue("username", (entry.Username ?? string.Empty).Trim());
         command.Parameters.AddWithValue("score", entry.Score);
         command.Parameters.AddWithValue("at", NpgsqlDbType.TimestampTz, entry.At.UtcDateTime);
@@ -39,6 +46,7 @@ public sealed class LeaderboardStore : ILeaderboardStore
         command.ExecuteNonQuery();
     }
 
+    //methods that reads the db using sql command select
     public List<ScoreEntry> ReadAll()
     {
         const string sql = $"""
@@ -54,6 +62,8 @@ public sealed class LeaderboardStore : ILeaderboardStore
         using var reader = command.ExecuteReader();
         var entries = new List<ScoreEntry>();
 
+
+        //reads data from the tables, using reader to iterate rows and GetOrdinal to find the right column/row, then the value gets read wíth GetString or GetInt32
         while (reader.Read())
         {
             var username = reader.GetString(reader.GetOrdinal("username"));

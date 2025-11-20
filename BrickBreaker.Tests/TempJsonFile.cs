@@ -7,15 +7,15 @@ internal sealed class TempJsonFile : IDisposable
     private readonly string _directory;
     public string Path { get; }
 
-    public TempJsonFile(string? initialJson = null)
+    public TempJsonFile(string? initialJson = null) //Method creates temporary json directory
     {
         _directory = System.IO.Path.Combine(
             System.IO.Path.GetTempPath(),
-            "BrickBreakerTests",
+            "BrickBreakerTests", //makes sure the file is created in the right directory
             Guid.NewGuid().ToString("N"));
 
         System.IO.Directory.CreateDirectory(_directory);
-        Path = System.IO.Path.Combine(_directory, "data.json");
+        Path = System.IO.Path.Combine(_directory, "data.json"); 
 
         if (initialJson is not null)
         {
@@ -23,7 +23,7 @@ internal sealed class TempJsonFile : IDisposable
         }
     }
 
-    public void Dispose()
+    public void Dispose() //method deletes the above created directory
     {
         try
         {
