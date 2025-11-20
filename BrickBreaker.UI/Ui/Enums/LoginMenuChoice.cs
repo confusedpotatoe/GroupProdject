@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BrickBreaker.UI.Ui.Enums
+﻿namespace BrickBreaker.UI.Ui.Enums
 {
+    // Represents the various options available in the login menu
+    // Connected to the ILoginMenu interface
     public enum LoginMenuChoice
 
     {

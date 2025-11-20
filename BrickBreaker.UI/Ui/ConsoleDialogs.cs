@@ -1,39 +1,45 @@
 ﻿using BrickBreaker.UI.Ui.Interfaces;
 using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BrickBreaker.Ui
 {
+    // Implementation of console dialogs using Spectre.Console
+    // Handles user prompts and messages in the console UI
     public class ConsoleDialogs : IConsoleDialogs
     {
         public (string Username, string Password) PromptCredentials()
         {
+            // Prompt for username
             var username = AnsiConsole.Prompt(
                 new TextPrompt<string>("Username: ")
-                    .PromptStyle("White"));
+                    .PromptStyle("White"))
+                    .Trim();
 
+            // Prompt for password (hidden input)
             var password = AnsiConsole.Prompt(
                 new TextPrompt<string>("Password: ")
                     .PromptStyle("White")
-                    .Secret());
+                    .Secret())
+                    .Trim();
 
             return (username, password);
         }
 
         public string PromptNewUsername()
         {
-            AnsiConsole.Write("\nChoose a username: ");
-            return Console.ReadLine()?.Trim() ?? "";
+            return AnsiConsole.Prompt(
+                new TextPrompt<string>("\nChoose a username:")
+                    .PromptStyle("White"))
+                .Trim();
         }
 
         public string PromptNewPassword()
         {
-            AnsiConsole.Write("Choose a password: ");
-            return Console.ReadLine()?.Trim() ?? "";
+            return AnsiConsole.Prompt(
+                new TextPrompt<string>("Choose a password:")
+                    .PromptStyle("White")
+                    .Secret())
+                .Trim();
         }
 
         public void ShowMessage(string message) => AnsiConsole.MarkupLine(message);
@@ -44,6 +50,7 @@ namespace BrickBreaker.Ui
             Console.ReadKey(true);
         }
 
+        // Displays leaderboard entries in a formatted table
         public void ShowLeaderboard(IEnumerable<(string Username, int Score, DateTimeOffset At)> entries)
         {
             // Create a table
@@ -51,14 +58,15 @@ namespace BrickBreaker.Ui
                 .Border(TableBorder.Rounded)
                 .Title("Top 10 Leaderboard");
 
-            // Add columns
             table.AddColumn("[bold]#[/]");
             table.AddColumn("[bold]Username[/]");
             table.AddColumn("[bold]Score[/]");
             table.AddColumn("[bold]Date[/]");
 
+            // Row counter
             int i = 1;
 
+            // Add rows for each entry
             foreach (var e in entries)
             {
                 var localAt = e.At.ToLocalTime();
@@ -70,11 +78,11 @@ namespace BrickBreaker.Ui
                     localAt.ToString("yyyy-MM-dd HH:mm")
                 );
 
+                // Limit to top 10 entries
                 if (i > 10)
                     break;
             }
 
-            // Print table
             AnsiConsole.Write(table);
         }
     }
