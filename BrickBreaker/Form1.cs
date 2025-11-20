@@ -13,12 +13,24 @@ namespace BrickBreaker
         // --- Game constants ---
         private const int WindowWidth = 800;            // Width of the game window
         private const int WindowHeight = 800;           // Height of the game window
+        private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
+
+        // --- Ball constants ---
         private const int BallRadius = 7;                // Radius of the ball
+
+        // --- Paddle constants ---
         private int PaddleWidth = 100;                    // Width of the paddle
         private const int PaddleHeight = 20;              // Height of the paddle
         private const double PaddleSpeed = 13;            // Speed at which paddle moves
         private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
         private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
+
+        // Paddle movement variables
+        private double paddleX;                              // Current X position of the paddle (floating point for smooth movement)
+        private int paddleY;                                 // Fixed Y position of paddle
+        private bool leftPressed, rightPressed;             // Whether left or right keys are currently pressed
+
+        // --- Brick constants ---
         private const int BrickRows = 7;                   // Number of brick rows
         private const int BrickCols = 10;                  // Number of brick columns
         private const int BrickWidth = 60;                 // Width of each brick
@@ -27,13 +39,17 @@ namespace BrickBreaker
         private const int BrickStartY = 40;                 // Starting Y position of first brick
         private const int BrickXSpacing = 70;               // Horizontal spacing between bricks
         private const int BrickYSpacing = 30;               // Vertical spacing between bricks
-        private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
+
+        // --- Game variables ---
         private int score = 0;                              // Current player score
         private int brickStreak = 0;                        // Count of bricks hit in current ball bounce streak
         private int scoreMultiplier = 1;                    // Score multiplier based on streak
         private bool isPaused = false;                      // Game pause status
-        private double timeSinceColorChange = 0; // Tid sedan senaste färgbyte
-        private double colorChangeInterval = 2; // Byte intervall i sekunder
+        private bool isGameOver = false;                    // Game over state
+        private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
+        private double elapsedSeconds = 0;                  // Total elapsed time in seconds
+        private double timeSinceColorChange = 0; 
+        private double colorChangeInterval = 2; 
 
         // --- Game state ---
         private System.Windows.Forms.Timer gameTimer;      // Timer controlling game update ticks
@@ -42,14 +58,8 @@ namespace BrickBreaker
         private List<PowerUp> powerUps = new List<PowerUp>();// List of active powerups falling
         private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
         private Random rand = new Random();                 // Random number generator for colors/powerups
-        private bool isGameOver = false;                    // Game over state
-        private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
-        private double elapsedSeconds = 0;                  // Total elapsed time in seconds
+      
 
-        // Paddle movement variables
-        private double paddleX;                              // Current X position of the paddle (floating point for smooth movement)
-        private int paddleY;                                 // Fixed Y position of paddle
-        private bool leftPressed, rightPressed;             // Whether left or right keys are currently pressed
 
         // Constructor: Initialize game form and components
         public Form1()
