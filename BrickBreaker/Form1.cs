@@ -17,6 +17,8 @@ namespace BrickBreaker
 
         // --- Ball constants ---
         private const int BallRadius = 7;                // Radius of the ball
+        private bool ballReadyToShoot = true; // Indicates if ball is waiting on paddle to be shot
+
 
         // --- Paddle constants ---
         private int PaddleWidth = 100;                    // Width of the paddle
@@ -136,6 +138,32 @@ namespace BrickBreaker
             this.KeyUp += Form1_KeyUp;
         }
 
+        private void ResetBallToPaddle()
+        {
+            var mainBall = balls.FirstOrDefault();
+            if (mainBall != null)
+            {
+                mainBall.X = (int)(paddleX + PaddleWidth / 2 - BallRadius);
+                mainBall.Y = paddleY - 50; // Position just above paddle
+                mainBall.VX = 0; // waiting to shoot
+                mainBall.VY = 0; // waiting to shoot
+                ballReadyToShoot = true; // set to true for shooting later
+            }
+            else
+            {
+                // create new ball if none exists
+                balls.Clear();
+                balls.Add(new Ball(
+                    x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
+                    y: paddleY - 50,
+                    vx: 0, vy: 0,
+                    radius: BallRadius
+                ));
+                ballReadyToShoot = true;
+            }
+        }
+
+
 
         // Paint event handler to render the game elements each frame
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -190,15 +218,22 @@ namespace BrickBreaker
                 g.DrawString(overText, fontGameOver, Brushes.Red, cx, cy);
             }
             // If paused (and not game over), display pause message
-            if (isPaused && !isGameOver)
+            if (ballReadyToShoot && !isGameOver && !isPaused)
             {
-                string pauseText = "Paused (press P to resume)";
-                SizeF sz = g.MeasureString(pauseText, fontGameOver);
-                float px = (ClientSize.Width - sz.Width) / 2, py = (ClientSize.Height - sz.Height) / 2 + 45;
-                g.DrawString(pauseText, fontGameOver, Brushes.Cyan, px, py);
-                elapsedSeconds += gameTimer.Interval / 1000.0;
-                timeSinceColorChange += gameTimer.Interval / 1000.0;
+                string launchText = "Press UP ARROW to launch the ball";
+                var fontLaunch = new Font("Arial", 16, FontStyle.Bold);
+                SizeF textSize = g.MeasureString(launchText, fontLaunch);
+                float x = (ClientSize.Width - textSize.Width) / 2;
+                float y = paddleY - 80; // position above the paddle
+
+                using (Brush brush = new SolidBrush(Color.White))
+                {
+                    g.DrawString(launchText, fontLaunch, brush, x, y);
+                }
             }
+
+
+
         }
 
         // Activates the effect of a collected power-up based on type
@@ -284,6 +319,7 @@ namespace BrickBreaker
                 timeSinceColorChange += gameTimer.Interval / 1000.0;
             }
 
+
             if (timeSinceColorChange >= colorChangeInterval)
             {
                 foreach (var brick in bricks)
@@ -330,7 +366,18 @@ namespace BrickBreaker
             // Update all balls positions and handle collisions
             foreach (var ball in balls.ToList())
             {
-                ball.UpdatePosition();
+                if (ballReadyToShoot)
+                {
+                    // Lock ball position above paddle
+                    ball.X = (int)(paddleX + PaddleWidth / 2 - BallRadius);
+                    ball.Y = paddleY - 50;
+                    
+                }
+                else
+                {
+                    ball.UpdatePosition();
+                    
+                }
 
                 // If ball falls below play area, remove it; if last ball, game over
                 if (ball.Y + ball.Radius * 2 > playAreaRect.Bottom)
@@ -342,6 +389,7 @@ namespace BrickBreaker
                         return; // Stop further processing as game ended
                     }
                     continue;
+
                 }
 
                 // Update powerups again within ball loop (may be redundant)
@@ -481,6 +529,15 @@ namespace BrickBreaker
             if (isGameOver && e.KeyCode == Keys.Space)
             {
                 RestartGame();
+                balls.Clear();
+                balls.Add(new Ball(
+                    x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
+                    y: paddleY - 50,
+                    vx: 0, vy: 0,
+                    radius: BallRadius
+                ));
+                ballReadyToShoot = true; // Ensure ball waiting after restart
+
             }
 
             // Toggle pause state with 'P' key
@@ -489,6 +546,18 @@ namespace BrickBreaker
                 isPaused = !isPaused;     // Flip pause status
                 Invalidate();             // Redraw to show pause message
             }
+            if (e.KeyCode == Keys.Up && ballReadyToShoot)
+            {
+                // Give the ball an initial shooting velocity
+                var mainBall = balls.FirstOrDefault();
+                if (mainBall != null)
+                {
+                    mainBall.VX = 0;
+                    mainBall.VY = -7; // direction upwards
+                    ballReadyToShoot = false; // ball is now in motion
+                }
+            }
+
         }
 
         // Restart the game state to initial values
