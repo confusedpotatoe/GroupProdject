@@ -463,22 +463,39 @@ namespace BrickBreaker
 
                 // Paddle Collision
                 if (BallHitsRect(ball, new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight)))
-                {
-                    double ballCenter = ball.X + ball.Radius;
-                    double paddleCenter = paddleX + PaddleWidth / 2.0;
-                    double hitPos = (ballCenter - paddleCenter) / (PaddleWidth / 2.0);
+                { 
+                    double ballCenter = ball.X + ball.Radius; // Ball center X
+                    double paddleCenter = paddleX + PaddleWidth / 2.0; // Paddle center X
+                    double hitPos = (ballCenter - paddleCenter) / (PaddleWidth / 2.0); // -1 (left) to +1 (right)
 
                     // Physics math
-                    double BallSpeed = 7.0;
-                    double maxHorizontal = BallSpeed * 0.8;
-                    double vx = hitPos * maxHorizontal;
+                    double BallSpeed = 9.0; // (Increased slightly for better feel)
+                    double maxHorizontal = BallSpeed * 0.75; // Max horizontal speed component
+
+                    double vx = hitPos * maxHorizontal; // New Horizontal Speed based on hit position
+
+                    // --- NEW: PREVENT VERTICAL LOCK ---
+                    // If the ball hits dead center, VX becomes 0. We must prevent that.
+                    double minHorizontal = 2.0; // Minimum horizontal speed allowed
+
+                    if (Math.Abs(vx) < minHorizontal) // Too vertical
+                    {
+                        // If its too vertical, change it to the minimum speed.
+                        // keep the sign left/right based on where it hit.
+                        if (vx < 0) vx = -minHorizontal;
+                        else vx = minHorizontal;
+                    }
+                    // ----------------------------------
+
+                    // Recalculate Vertical Speed (VY) based on the new VX
+                    // This ensures the ball always moves at the same total speed
                     double vy = -Math.Sqrt(BallSpeed * BallSpeed - vx * vx);
 
-                    ball.VX = vx;
-                    ball.VY = vy;
+                    ball.VX = vx; 
+                    ball.VY = vy; 
 
-                    brickStreak = 0;
-                    scoreMultiplier = 1;
+                    brickStreak = 0; // Reset streak
+                    scoreMultiplier = 1; // Reset multiplier
                 }
             }
 
