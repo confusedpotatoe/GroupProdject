@@ -77,6 +77,7 @@ namespace BrickBreaker
         private List<PowerUp> powerUps = new List<PowerUp>();// List of active powerups falling
         private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
         private Random rand = new Random();                 // Random number generator for colors/powerups
+        private float borderHue = 0f;
 
 
 
@@ -131,11 +132,14 @@ namespace BrickBreaker
             g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 180, playAreaRect.Top - 40);
 
             // 2. Draw Play Area
+            // --- NEW: Generate the rainbow color ---
+            // Hue = borderHue, Saturation = 1.0 (full), Value = 1.0 (bright)
+            Color animatedBorderColor = ColorFromHSV(borderHue, 1.0f, 1.0f);
+            using (Pen borderPen = new Pen(animatedBorderColor, 4))
+                g.DrawRectangle(borderPen, playAreaRect);
             using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
                 g.FillRectangle(bgBrush, playAreaRect);
-            using (Pen borderPen = new Pen(Color.DarkRed, 4))
-                g.DrawRectangle(borderPen, playAreaRect);
-
+           
             // 3. Draw Game Objects
             DrawBricks(g);
             DrawPaddle(g);
@@ -316,6 +320,10 @@ namespace BrickBreaker
         // Main game logic executed on each timer tick (~60 times per second)
         private void GameTimer_Tick(object sender, EventArgs e)
         {
+            // --- NEW: Animate Border Color ---
+            borderHue += 1.5f; // Adjust this number to change speed (higher = faster)
+            if (borderHue >= 360f) borderHue -= 360f;
+
             if (!isGameOver && !isPaused)
             {
                 // Only increase the timer variables IF the ball has been shot
@@ -745,7 +753,7 @@ namespace BrickBreaker
             elapsedSeconds = 0;
             isGameOver = false;
             gameFinishedRaised = false;
-            gameTimer.Start(); // Important: Start the timer again!
+            gameTimer.Start(); 
             ballReadyToShoot = true;
             StartLevel(1);
 
@@ -762,6 +770,28 @@ namespace BrickBreaker
             gameFinishedRaised = true;
             GameFinished?.Invoke(this, score);
 
+        }
+
+        // Converts HSV color values to a Color object
+        private Color ColorFromHSV(float hue, float saturation, float value) 
+        {
+            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6; // Which sector of the color wheel
+
+            double f = hue / 60.0 - Math.Floor(hue / 60.0); // Fractional part of hue sector
+
+            value = value * 255; // Scale value to 0-255 range
+            int v = Convert.ToInt32(value); // Brightness
+            int p = Convert.ToInt32(value * (1 - saturation)); // Value with no saturation
+
+            int q = Convert.ToInt32(value * (1 - f * saturation));
+            int t = Convert.ToInt32(value * (1 - (1 - f) * saturation));
+
+            if (hi == 0) return Color.FromArgb(255, v, t, p);
+            else if (hi == 1) return Color.FromArgb(255, q, v, p);
+            else if (hi == 2) return Color.FromArgb(255, p, v, t);
+            else if (hi == 3) return Color.FromArgb(255, p, q, v);
+            else if (hi == 4) return Color.FromArgb(255, t, p, v);
+            else return Color.FromArgb(255, v, p, q);
         }
     }
 }
