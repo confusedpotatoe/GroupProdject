@@ -246,8 +246,8 @@ namespace BrickBreaker
                     {
                         Ball mainBall = balls[0];
                         // Add two extra balls with slightly different velocities for multiball effect
-                        balls.Add(new Ball(mainBall.X, mainBall.Y, 6, 6, mainBall.Radius));
-                        balls.Add(new Ball(mainBall.X, mainBall.Y, -6, 6, mainBall.Radius));
+                        balls.Add(new Ball(mainBall.X, mainBall.Y, 6, -6, mainBall.Radius));
+                        balls.Add(new Ball(mainBall.X, mainBall.Y, -6, -6, mainBall.Radius));
                     }
                     break;
                 case PowerUpType.PaddleExtender:
