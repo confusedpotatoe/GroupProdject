@@ -53,8 +53,8 @@ namespace BrickBreaker
         private const int BrickCols = 10;                  // Number of brick columns
         private const int BrickWidth = 60;                 // Width of each brick
         private const int BrickHeight = 25;                // Height of each brick
-        private const int BrickStartX = 60;                 // Starting X position of first brick
-        private const int BrickStartY = 40;                 // Starting Y position of first brick
+        private int BrickStartX; // calculated in constructor
+        private int BrickStartY; // calculated in constructor
         private const int BrickXSpacing = 70;               // Horizontal spacing between bricks
         private const int BrickYSpacing = 30;               // Vertical spacing between bricks
         private double timeSinceColorChange = 0;            // Timer for brick color changes
@@ -77,7 +77,7 @@ namespace BrickBreaker
         private List<PowerUp> powerUps = new List<PowerUp>();// List of active powerups falling
         private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
         private Random rand = new Random();                 // Random number generator for colors/powerups
-      
+
 
 
         // Constructor: Initialize game form and components
@@ -85,39 +85,34 @@ namespace BrickBreaker
         {
             InitializeComponent();
 
-            // Calculate the rectangle defining the play area including bricks, paddle area, and margin
-            playAreaRect = new Rectangle(
-                BrickStartX - PlayAreaMargin,
-                BrickStartY - PlayAreaMargin,
-                (BrickCols - 1) * BrickXSpacing + BrickWidth + PlayAreaMargin * 2,
-                (BrickRows - 1) * BrickYSpacing + BrickHeight + PaddleAreaHeight + PlayAreaMargin
-            );
+            // Default start in Fullscreen
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.WindowState = FormWindowState.Maximized;
+            this.Bounds = Screen.PrimaryScreen.Bounds;
 
-            // Setup form properties for size, border style, and double buffering for smooth graphics
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.SizeGripStyle = SizeGripStyle.Hide;
-            this.ClientSize = new Size(WindowWidth, WindowHeight);
             this.DoubleBuffered = true;
 
-            // Setup paddle position near bottom of play area with a margin
-            int paddleBottomMargin = 10;
-            paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
-            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
-            originalPaddleWidth = PaddleWidth;
-
-            // Initialize bricks list and create bricks with colors randomized
+            // Initialize lists
             bricks = new List<Brick>();
 
-            StartLevel(1); // Start at level 1
+            // --- CALL THE NEW LAYOUT METHOD ---
+            SetupGameLayout();
 
-            // Setup the timer for game updates at approx 60 FPS (tick every ~16ms)
+            // Initialize Paddle Width
+            originalPaddleWidth = PaddleWidth;
+            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
+
+            StartLevel(1);
+
+            // Timer Setup
             gameTimer = new System.Windows.Forms.Timer();
             gameTimer.Interval = 16;
             gameTimer.Tick += GameTimer_Tick;
             gameTimer.Start();
 
-            // Attach paint and keyboard event handlers for rendering and input
+            // Events
             this.Paint += Form1_Paint;
             this.KeyDown += Form1_KeyDown;
             this.KeyUp += Form1_KeyUp;
@@ -138,7 +133,7 @@ namespace BrickBreaker
             // 2. Draw Play Area
             using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
                 g.FillRectangle(bgBrush, playAreaRect);
-            using (Pen borderPen = new Pen(Color.White, 4))
+            using (Pen borderPen = new Pen(Color.DarkRed, 4))
                 g.DrawRectangle(borderPen, playAreaRect);
 
             // 3. Draw Game Objects
@@ -323,8 +318,12 @@ namespace BrickBreaker
         {
             if (!isGameOver && !isPaused)
             {
-                elapsedSeconds += gameTimer.Interval / 1000.0;
-                timeSinceColorChange += gameTimer.Interval / 1000.0;
+                // Only increase the timer variables IF the ball has been shot
+                if (!ballReadyToShoot)
+                {
+                    elapsedSeconds += gameTimer.Interval / 1000.0;
+                    timeSinceColorChange += gameTimer.Interval / 1000.0;
+                }
             }
             else
             {
@@ -550,49 +549,162 @@ namespace BrickBreaker
                 new Rectangle(b.X, b.Y, b.Width, b.Height)
             );
         }
+        private void SetupGameLayout() // NEW METHOD TO HANDLE RESIZING AND CENTERING
+        {
+            // 1. Remember where the game board WAS before resizing
+            int oldStartX = BrickStartX;
+            int oldStartY = BrickStartY;
+
+            // 2. Get new Window Size
+            WindowWidth = this.ClientSize.Width;
+            WindowHeight = this.ClientSize.Height;
+
+            // 3. Calculate the total game size (Standard Math)
+            int totalGameWidth = (BrickCols - 1) * BrickXSpacing + BrickWidth;
+            int totalGameHeight = (BrickRows - 1) * BrickYSpacing + BrickHeight + PaddleAreaHeight;
+
+            // 4. Calculate NEW Start Positions (Centering)
+            BrickStartX = (WindowWidth - totalGameWidth) / 2;
+            BrickStartY = (WindowHeight - totalGameHeight) / 2;
+
+            // 5. Define the new Play Area Rectangle
+            playAreaRect = new Rectangle(
+                BrickStartX - PlayAreaMargin,
+                BrickStartY - PlayAreaMargin,
+                totalGameWidth + PlayAreaMargin * 2,
+                totalGameHeight + PlayAreaMargin
+            );
+
+            // --- THE FIX: REPOSITION OBJECTS ---
+
+            // Calculate how far the board moved (Delta)
+            int dx = BrickStartX - oldStartX;
+            int dy = BrickStartY - oldStartY;
+
+            // Only move things if the game has actually started (bricks exist)
+            // and if this isn't the very first setup (oldStartX won't be 0 if initialized)
+            if (bricks.Count > 0 && oldStartX != 0)
+            {
+                // Shift Bricks
+                foreach (var brick in bricks)
+                {
+                    brick.X += dx;
+                    brick.Y += dy;
+                }
+
+                // Shift Balls
+                foreach (var ball in balls)
+                {
+                    ball.X += dx;
+                    ball.Y += dy;
+                }
+
+                // Shift Powerups
+                foreach (var p in powerUps)
+                {
+                    p.X += dx;
+                    p.Y += dy;
+                }
+
+                // Shift Paddle X (horizontal move)
+                paddleX += dx;
+            }
+            else
+            {
+                // If this is the very first start (Constructor), just center paddle
+                paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
+            }
+
+            // Always force Paddle Y to the bottom of the new rectangle
+            int paddleBottomMargin = 10;
+            paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
+
+            // Safety check to keep paddle inside bounds
+            if (paddleX < playAreaRect.Left) paddleX = playAreaRect.Left;
+            if (paddleX > playAreaRect.Right - PaddleWidth) paddleX = playAreaRect.Right - PaddleWidth;
+        }
+        private void ToggleFullscreen()
+        {
+            if (this.WindowState == FormWindowState.Maximized)
+            {
+                // SWITCH TO WINDOWED MODE
+                this.FormBorderStyle = FormBorderStyle.FixedSingle;
+                this.WindowState = FormWindowState.Normal;
+                this.Size = new Size(1000, 900); // Set a default window size
+                this.CenterToScreen();
+            }
+            else
+            {
+                // SWITCH TO FULLSCREEN
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.WindowState = FormWindowState.Maximized;
+                this.Bounds = Screen.PrimaryScreen.Bounds;
+            }
+
+            // CRITICAL: Recalculate the center of the screen
+            SetupGameLayout();
+
+            // Force a redraw so the black background fills the new size
+            Invalidate();
+        }
 
         // Keyboard handler for key press events
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            // Mark left or right pressed flags
-            if (e.KeyCode == Keys.Left) leftPressed = true;
-            if (e.KeyCode == Keys.Right) rightPressed = true;
+            // Exit Game
+            if (e.KeyCode == Keys.Escape)
+            {
+                Application.Exit();
+            }
 
-            // If game over and spacebar pressed, restart game
+            // Toggle Fullscreen
+            if (e.KeyCode == Keys.F) // You used F in your snippet, so I kept F here
+            {
+                ToggleFullscreen();
+            }
+
+            // --- MOVEMENT (Arrows OR WASD) ---
+            // We ONLY set them to TRUE here. Do not set them to false here!
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.A) leftPressed = true;
+            if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D) rightPressed = true;
+
+            // Restart Game
             if (isGameOver && e.KeyCode == Keys.Space)
             {
-
                 RestartGame();
-                ballReadyToShoot = true; // Ensure ball waiting after restart
-
+                ballReadyToShoot = true;
             }
 
-            // Toggle pause state with 'P' key
+            // Pause
             if (e.KeyCode == Keys.P)
             {
-                isPaused = !isPaused;     // Flip pause status
-                Invalidate();             // Redraw to show pause message
+                isPaused = !isPaused;
+                Invalidate();
             }
-            if (e.KeyCode == Keys.Up && ballReadyToShoot)
+
+            // Shoot Ball (Arrow Up OR W)
+            if ((e.KeyCode == Keys.Up || e.KeyCode == Keys.W) && ballReadyToShoot)
             {
-                // Give the ball an initial shooting velocity
                 var mainBall = balls.FirstOrDefault();
                 if (mainBall != null)
                 {
                     mainBall.VX = 0;
-                    mainBall.VY = -7; // direction upwards
-                    ballReadyToShoot = false; // ball is now in motion
+                    mainBall.VY = -7;
+                    ballReadyToShoot = false;
                 }
             }
-
         }
+        
 
         // Keyboard handler for key release events
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
-            // Unset flags on key release
-            if (e.KeyCode == Keys.Left) leftPressed = false;
-            if (e.KeyCode == Keys.Right) rightPressed = false;
+            // When the key is RELEASED, we stop moving
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.A)
+                leftPressed = false;
+
+            if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D)
+                rightPressed = false;
         }
 
         private void TriggerGameOver()
@@ -617,7 +729,7 @@ namespace BrickBreaker
             isGameOver = false;
             gameFinishedRaised = false;
             gameTimer.Start(); // Important: Start the timer again!
-
+            ballReadyToShoot = true;
             StartLevel(1);
 
             Invalidate();
