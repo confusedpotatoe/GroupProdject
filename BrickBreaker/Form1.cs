@@ -128,21 +128,21 @@ namespace BrickBreaker
 
             // 1. Draw HUD (Using the class-level fonts)
             int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60; 
+
             g.DrawString($" {minutes:D2}:{seconds:D2}", fontTime, Brushes.White, playAreaRect.Left + 620, playAreaRect.Top - 40); // Time display
 
             g.DrawString($"Score: {score}", fontScore, Brushes.Yellow, playAreaRect.Left, playAreaRect.Top - 40); // Score display
 
-            g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 200, playAreaRect.Top - 40); // Multiplier display
+            g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Yellow, playAreaRect.Left, playAreaRect.Bottom + 20); // Multiplier display
 
+            Color animatedBorderColor = ColorFromHSV(borderHue, 1.0f, 1.0f); // Convert HSV to RGB Color
             // 2. Draw Play Area
-            // --- NEW: Generate the rainbow color ---
-            // Hue = borderHue, Saturation = 1.0 (full), Value = 1.0 (bright)
-            Color animatedBorderColor = ColorFromHSV(borderHue, 1.0f, 1.0f);
-            using (Pen borderPen = new Pen(animatedBorderColor, 4))
+            using (Pen borderPen = new Pen(animatedBorderColor, 12))
                 g.DrawRectangle(borderPen, playAreaRect);
+
             using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
                 g.FillRectangle(bgBrush, playAreaRect);
-           
+
             // 3. Draw Game Objects
             DrawBricks(g);
             DrawPaddle(g);
@@ -290,17 +290,21 @@ namespace BrickBreaker
         // Draw the paddle graphics at current position
         private void DrawPaddle(Graphics g)
         {
-            Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight); // Paddle rectangle
+            Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight);
 
-            Color drawColor = normalPaddleColor; // Default paddle color
-            if (isPaddleBlinking && (paddleBlinkCounter / 8) % 2 == 0) // Blink every 8 ticks
-                drawColor = blinkPaddleColor; // Alternate color for blinking effect
+            // Determine paddle color (rainbow effect)
+            Color drawColor = ColorFromHSV(borderHue, 1.0f, 1.0f);
 
-            using (var paddleBrush = new SolidBrush(drawColor)) // Create brush with determined color
-            using (var paddlePen = new Pen(Color.Blue, 2)) // Pen for paddle border
+            // Keep the orange blinking effect if the paddle is extending/powering down
+            if (isPaddleBlinking && (paddleBlinkCounter / 8) % 2 == 0)
+                drawColor = blinkPaddleColor;
+
+            using (var paddleBrush = new SolidBrush(drawColor))
+            // changed the paddle border to White so the rainbow fill pops out more
+            using (var paddlePen = new Pen(Color.Black, 3))
             {
-                g.FillRectangle(paddleBrush, paddleRect); // Draw filled paddle
-                g.DrawRectangle(paddlePen, paddleRect); // Draw paddle border
+                g.FillRectangle(paddleBrush, paddleRect); // Fills paddle with Rainbow
+                g.DrawRectangle(paddlePen, paddleRect);   // Draws border
             }
         }
 
@@ -325,7 +329,7 @@ namespace BrickBreaker
         {
             // --- NEW: Animate Border Color ---
             borderHue += 1.5f; // Adjust this number to change speed (higher = faster)
-            if (borderHue >= 360f) borderHue -= 360f;
+            if (borderHue >= 360f) borderHue -= 360f; // Wrap around hue
 
             if (!isGameOver && !isPaused)
             {
@@ -645,7 +649,7 @@ namespace BrickBreaker
 
             // Always force Paddle Y to the bottom of the new rectangle
             int paddleBottomMargin = 10;
-            paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
+            paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin; // Fixed Y position of paddle
 
             // Safety check to keep paddle inside bounds
             if (paddleX < playAreaRect.Left) paddleX = playAreaRect.Left;
