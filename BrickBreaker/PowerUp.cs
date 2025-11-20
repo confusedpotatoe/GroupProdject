@@ -25,7 +25,7 @@ public class PowerUp
 
     public void UpdatePosition()
     {
-        Y += Speed; // Move down each update
+        Y += 2; // Move down each update
     }
 
     public void Draw(Graphics g)
