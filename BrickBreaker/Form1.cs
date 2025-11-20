@@ -1,58 +1,58 @@
-
-
 namespace BrickBreaker
 {
     public partial class Form1 : Form
     {
+        public event EventHandler<int>? GameFinished;
+        public bool CloseOnGameOver { get; set; }
+        public int LatestScore => score;
+
         // --- Game constants ---
-        private const int WindowWidth = 800; 
-        private const int WindowHeight = 800;
-        private const int BallRadius = 7;
-        private int PaddleWidth = 100;
-        private const int PaddleHeight = 20;
-        private const double PaddleSpeed = 13;
-        private const int PlayAreaMargin = 2;     // Pixels padding on all sides, optional
-        private const int PaddleAreaHeight = 400;   // Space below bricks for paddle and ball
-        private const int BrickRows = 7;
-        private const int BrickCols = 10;
-        private const int BrickWidth = 60;
-        private const int BrickHeight = 25;
-        private const int BrickStartX = 60;
-        private const int BrickStartY = 40;
-        private const int BrickXSpacing = 70;
-        private const int BrickYSpacing = 30;
-        private Rectangle playAreaRect;
-        private int score = 0;                // Your current score
-        private int brickStreak = 0;          // How many bricks hit in one ball bounce
-        private int scoreMultiplier = 1;      // The current multiplier
-        private bool isPaused = false;
+        private const int WindowWidth = 800;            // Width of the game window
+        private const int WindowHeight = 800;           // Height of the game window
+        private const int BallRadius = 7;                // Radius of the ball
+        private int PaddleWidth = 100;                    // Width of the paddle
+        private const int PaddleHeight = 20;              // Height of the paddle
+        private const double PaddleSpeed = 13;            // Speed at which paddle moves
+        private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
+        private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
+        private const int BrickRows = 7;                   // Number of brick rows
+        private const int BrickCols = 10;                  // Number of brick columns
+        private const int BrickWidth = 60;                 // Width of each brick
+        private const int BrickHeight = 25;                // Height of each brick
+        private const int BrickStartX = 60;                 // Starting X position of first brick
+        private const int BrickStartY = 40;                 // Starting Y position of first brick
+        private const int BrickXSpacing = 70;               // Horizontal spacing between bricks
+        private const int BrickYSpacing = 30;               // Vertical spacing between bricks
+        private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
+        private int score = 0;                              // Current player score
+        private int brickStreak = 0;                        // Count of bricks hit in current ball bounce streak
+        private int scoreMultiplier = 1;                    // Score multiplier based on streak
+        private bool isPaused = false;                      // Game pause status
+        private double timeSinceColorChange = 0; // Tid sedan senaste färgbyte
+        private double colorChangeInterval = 2; // Byte intervall i sekunder
 
         // --- Game state ---
-        private System.Windows.Forms.Timer gameTimer;
-        private List<Ball> balls = new List<Ball>();
-        private List<Brick> bricks;
-        private List<PowerUp> powerUps = new List<PowerUp>();
-        private List<ScorePopup> scorePopups = new List<ScorePopup>();
-        private Random rand = new Random();
-        private bool isGameOver = false;
-        private double elapsedSeconds = 0;
+        private System.Windows.Forms.Timer gameTimer;      // Timer controlling game update ticks
+        private List<Ball> balls = new List<Ball>();       // List of balls in play (for multiball)
+        private List<Brick> bricks;                         // List of bricks in the level
+        private List<PowerUp> powerUps = new List<PowerUp>();// List of active powerups falling
+        private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
+        private Random rand = new Random();                 // Random number generator for colors/powerups
+        private bool isGameOver = false;                    // Game over state
+        private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
+        private double elapsedSeconds = 0;                  // Total elapsed time in seconds
 
+        // Paddle movement variables
+        private double paddleX;                              // Current X position of the paddle (floating point for smooth movement)
+        private int paddleY;                                 // Fixed Y position of paddle
+        private bool leftPressed, rightPressed;             // Whether left or right keys are currently pressed
 
-        // Paddle movement
-        private double paddleX;
-        private int paddleY;
-        private bool leftPressed, rightPressed;
-
-
-
-
-
+        // Constructor: Initialize game form and components
         public Form1()
         {
             InitializeComponent();
 
-            // --- Form setup ---
-
+            // Calculate the rectangle defining the play area including bricks, paddle area, and margin
             playAreaRect = new Rectangle(
                 BrickStartX - PlayAreaMargin,
                 BrickStartY - PlayAreaMargin,
@@ -60,22 +60,19 @@ namespace BrickBreaker
                 (BrickRows - 1) * BrickYSpacing + BrickHeight + PaddleAreaHeight + PlayAreaMargin
             );
 
+            // Setup form properties for size, border style, and double buffering for smooth graphics
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.SizeGripStyle = SizeGripStyle.Hide;
             this.ClientSize = new Size(WindowWidth, WindowHeight);
             this.DoubleBuffered = true;
-            
 
-
-            // --- Paddle setup ---
+            // Setup paddle position near bottom of play area with a margin
             int paddleBottomMargin = 10;
             paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
             paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
 
-            // --- Ball setup ---
-            int ballStartOffsetY = 50; // Pixels above the paddle
-
+            // Setup initial ball just above the paddle, values for velocity and radius
             balls.Clear();
             balls.Add(new Ball(
                 x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
@@ -84,9 +81,7 @@ namespace BrickBreaker
                 radius: BallRadius
             ));
 
-
-
-            // --- Bricks setup ---
+            // Initialize bricks list and create bricks with colors randomized
             bricks = new List<Brick>();
             for (int row = 0; row < BrickRows; row++)
             {
@@ -104,46 +99,47 @@ namespace BrickBreaker
                 }
             }
 
-            // --- Timer for animation ---
+            // Setup the timer for game updates at approx 60 FPS (tick every ~16ms)
             gameTimer = new System.Windows.Forms.Timer();
             gameTimer.Interval = 16;
             gameTimer.Tick += GameTimer_Tick;
             gameTimer.Start();
 
-            // --- Input events ---
+            // Attach paint and keyboard event handlers for rendering and input
             this.Paint += Form1_Paint;
             this.KeyDown += Form1_KeyDown;
             this.KeyUp += Form1_KeyUp;
         }
 
-        // ---- DRAW EVERYTHING ----
-       // Inside your Form1 class
+        // Paint event handler to render the game elements each frame
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            g.Clear(Color.Black);
+            g.Clear(Color.Black);  // Clear background to black
 
-            // Fonts
+            // Fonts used for displaying score, multiplier, and game state messages
             var fontScore = new Font("Arial", 18, FontStyle.Bold);
             var fontMultiplier = new Font("Arial", 16, FontStyle.Bold);
             var fontGameOver = new Font("Arial", 20, FontStyle.Bold);
 
-            // Timer, score, and multiplier labels
+            // Format elapsedSeconds as minutes and seconds and draw time, score, multiplier labels
             int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60;
             g.DrawString($"Time: {minutes:D2}:{seconds:D2}", fontScore, Brushes.White, playAreaRect.Left + 420, playAreaRect.Top - 40);
             g.DrawString($"Score: {score}", fontScore, Brushes.Yellow, playAreaRect.Left, playAreaRect.Top - 40);
             g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 180, playAreaRect.Top - 40);
 
-            // Play area
+            // Draw play area background with a dark color and white border
             using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
                 g.FillRectangle(bgBrush, playAreaRect);
             using (Pen borderPen = new Pen(Color.White, 4))
                 g.DrawRectangle(borderPen, playAreaRect);
 
+            // Draw bricks, paddle, and balls using helper methods
             DrawBricks(g);
             DrawPaddle(g);
             DrawBalls(g);
 
+            // Draw each ball (redundant here due to DrawBalls method but kept)
             foreach (var ball in balls)
             {
                 Rectangle ballRect = new Rectangle(ball.X, ball.Y, ball.Radius * 2, ball.Radius * 2);
@@ -155,10 +151,11 @@ namespace BrickBreaker
                 }
             }
 
+            // Draw any active power ups
             foreach (var p in powerUps)
                 p.Draw(e.Graphics);
 
-
+            // If game is over, display game over message centered on screen
             if (isGameOver)
             {
                 string overText = "Game Over! Press SPACE to restart";
@@ -166,16 +163,19 @@ namespace BrickBreaker
                 float cx = (ClientSize.Width - sz.Width) / 2, cy = (ClientSize.Height - sz.Height) / 2;
                 g.DrawString(overText, fontGameOver, Brushes.Red, cx, cy);
             }
+            // If paused (and not game over), display pause message
             if (isPaused && !isGameOver)
             {
                 string pauseText = "Paused (press P to resume)";
                 SizeF sz = g.MeasureString(pauseText, fontGameOver);
                 float px = (ClientSize.Width - sz.Width) / 2, py = (ClientSize.Height - sz.Height) / 2 + 45;
                 g.DrawString(pauseText, fontGameOver, Brushes.Cyan, px, py);
+                elapsedSeconds += gameTimer.Interval / 1000.0;
+                timeSinceColorChange += gameTimer.Interval / 1000.0;
             }
         }
 
-
+        // Activates the effect of a collected power-up based on type
         private void ActivatePowerUp(PowerUpType type)
         {
             switch (type)
@@ -184,19 +184,19 @@ namespace BrickBreaker
                     if (balls.Count > 0)
                     {
                         Ball mainBall = balls[0];
-                        // Add two new balls at the same spot, with slightly different velocities
+                        // Add two extra balls with slightly different velocities for multiball effect
                         balls.Add(new Ball(mainBall.X, mainBall.Y, 6, 6, mainBall.Radius));
                         balls.Add(new Ball(mainBall.X, mainBall.Y, -6, 6, mainBall.Radius));
                     }
                     break;
                 case PowerUpType.PaddleExtender:
-                    PaddleWidth += 30;
-                    // Optionally, timer to reset width after a few seconds
+                    PaddleWidth += 30; // Increase paddle width
+                    // Could add timer here to revert paddle size after some duration
                     break;
             }
         }
 
-        // These must be outside Form1_Paint:
+        // Helper method to draw all bricks in the game
         private void DrawBricks(Graphics g)
         {
             foreach (var brick in bricks)
@@ -207,24 +207,26 @@ namespace BrickBreaker
                     using (Pen bPen = new Pen(Color.DarkGray, 1))
                     {
                         var r = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
-                        g.FillRectangle(bBrush, r);
-                        g.DrawRectangle(bPen, r);
+                        g.FillRectangle(bBrush, r);    // Fill brick rectangle with color
+                        g.DrawRectangle(bPen, r);      // Draw border around brick
                     }
                 }
             }
         }
 
+        // Draw the paddle graphics at current position
         private void DrawPaddle(Graphics g)
         {
             Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight);
-            using (var paddleBrush = new SolidBrush(Color.FromArgb(36, 162, 255)))
-            using (var paddlePen = new Pen(Color.Blue, 2))
+            using (var paddleBrush = new SolidBrush(Color.FromArgb(36, 162, 255))) // Paddle fill color
+            using (var paddlePen = new Pen(Color.Blue, 2))                        // Paddle border color and thickness
             {
                 g.FillRectangle(paddleBrush, paddleRect);
                 g.DrawRectangle(paddlePen, paddleRect);
             }
         }
 
+        // Draw all balls currently in play
         private void DrawBalls(Graphics g)
         {
             foreach (var ball in balls)
@@ -233,85 +235,106 @@ namespace BrickBreaker
                 using (Brush ballBrush = new SolidBrush(Color.Red))
                 using (Pen ballPen = new Pen(Color.White, 2))
                 {
-                    g.FillEllipse(ballBrush, ballRect);
-                    g.DrawEllipse(ballPen, ballRect);
+                    g.FillEllipse(ballBrush, ballRect);  // Draw filled circle
+                    g.DrawEllipse(ballPen, ballRect);    // Draw border ellipse
                 }
             }
         }
 
-        // ---- GAME LOGIC + COLLISION ----
+        // Main game logic executed on each timer tick (~60 times per second)
         private void GameTimer_Tick(object sender, EventArgs e)
         {
+
+            if (!isGameOver && !isPaused) 
+            {
+                elapsedSeconds += gameTimer.Interval / 1000.0; 
+                timeSinceColorChange += gameTimer.Interval / 1000.0;
+            }
+
+            if (timeSinceColorChange >= colorChangeInterval)
+            {
+                foreach (var brick in bricks)
+                {
+                    if (brick.IsVisible)
+                    {
+                        brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+                    }
+                }
+                timeSinceColorChange = 0; // Nollställ timern
+            }
+            // Move paddle left or right if respective arrow keys are pressed, constrained within play area horizontally
             if (leftPressed && paddleX > playAreaRect.Left)
                 paddleX -= PaddleSpeed;
             if (rightPressed && paddleX < playAreaRect.Right - PaddleWidth)
                 paddleX += PaddleSpeed;
 
-            if (!isGameOver && !isPaused)
-                elapsedSeconds += gameTimer.Interval / 1000.0;
-
+            // If paused, just redraw and skip the rest of the update logic
             if (isPaused)
             {
                 Invalidate();
                 return;
             }
 
+            // Update positions of falling powerups, check for off-screen removal or paddle collection
             foreach (var powerUp in powerUps.ToList())
             {
                 powerUp.UpdatePosition();
 
-                // Remove powerups that fall out
+                // Remove powerups that fall below bottom of play area
                 if (powerUp.Y > playAreaRect.Bottom)
                     powerUps.Remove(powerUp);
 
-                // Check collision with paddle:
+                // Check collision between paddle and powerup
                 Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight);
                 Rectangle powerUpRect = new Rectangle(powerUp.X, powerUp.Y, powerUp.Width, powerUp.Height);
                 if (paddleRect.IntersectsWith(powerUpRect))
                 {
                     ActivatePowerUp(powerUp.Type);
-                    powerUps.Remove(powerUp); // Remove collected powerup
+                    powerUps.Remove(powerUp); // Remove collected power up
                 }
             }
-            // Only run ball logic if a ball exists
+
+            // Update all balls positions and handle collisions
             foreach (var ball in balls.ToList())
             {
                 ball.UpdatePosition();
 
-                // Remove the ball if it goes out of bounds (bottom)
+                // If ball falls below play area, remove it; if last ball, game over
                 if (ball.Y + ball.Radius * 2 > playAreaRect.Bottom)
                 {
                     balls.Remove(ball);
                     if (balls.Count == 0)
                     {
-                        isGameOver = true;
+                        TriggerGameOver();
                         return;
                     }
                     continue;
                 }
 
+                // Update powerups again within ball loop (may be redundant)
                 foreach (var powerUp in powerUps.ToList())
                 {
                     powerUp.UpdatePosition();
 
-                    // OPTIONAL: Remove PowerUps that fall below playAreaRect
+                    // Remove powerups going below play area
                     if (powerUp.Y > playAreaRect.Bottom)
                         powerUps.Remove(powerUp);
                 }
 
-                // Ball <-> brick collisions
+                // Ball and brick collision detection
                 foreach (var brick in bricks)
                 {
+
                     if (brick.IsVisible && BallHitsRect(ball, brick))
                     {
-                        brick.IsVisible = false;
-                        ball.InvertVerticalVelocity();
-                        brickStreak++;
-                        scoreMultiplier = Math.Max(1, brickStreak);
-                        score += 10 * scoreMultiplier;
+                        brick.IsVisible = false;          // Hide brick if hit
+                        ball.InvertVerticalVelocity();    // Bounce ball vertically
+                        brickStreak++;                    // Increment consecutive brick hit count
+                        scoreMultiplier = Math.Max(1, brickStreak); // Update score multiplier
+                        score += 10 * scoreMultiplier;    // Increase score by base value times multiplier
                         scorePopups.Add(new ScorePopup(brick.X + brick.Width / 2, brick.Y + brick.Height / 2, 10 * scoreMultiplier));
 
-                        // Power-up chance
+                        // 20% chance to drop a powerup at brick position when hit
                         if (rand.NextDouble() < 0.2)
                         {
                             var powerUpType = (PowerUpType)(rand.Next(0, 2));
@@ -319,11 +342,12 @@ namespace BrickBreaker
                         }
 
 
-                        break; // Only one brick hit per frame for this ball
+                        break;  // Only one brick hit per frame per ball to avoid multiple hits
                     }
+
                 }
 
-                // Ball <-> wall collisions
+                // Ball and wall collisions: left, right, top walls bounce and reset streak/multiplier
                 if (ball.X <= playAreaRect.Left)
                 {
                     ball.InvertHorizontalVelocity();
@@ -346,41 +370,41 @@ namespace BrickBreaker
                     scoreMultiplier = 1;
                 }
 
-                // Ball <-> paddle collision
+                // Ball and paddle collision detection and response including angle calculation based on hit position
                 if (BallHitsRect(ball, new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight)))
                 {
                     double ballCenter = ball.X + ball.Radius;
                     double paddleCenter = paddleX + PaddleWidth / 2.0;
                     double hitPos = (ballCenter - paddleCenter) / (PaddleWidth / 2.0);
 
-                    double BallSpeed = 7.0;
-                    double maxHorizontal = BallSpeed * 0.8;
-                    double vx = hitPos * maxHorizontal;
-                    double vy = -Math.Sqrt(BallSpeed * BallSpeed - vx * vx);
+                    double BallSpeed = 7.0;                       // Fixed ball speed after bounce
+                    double maxHorizontal = BallSpeed * 0.8;       // Max horizontal velocity component
+                    double vx = hitPos * maxHorizontal;           // Horizontal velocity proportional to hit position
+                    double vy = -Math.Sqrt(BallSpeed * BallSpeed - vx * vx); // Vertical velocity (upwards)
+
                     ball.VX = vx;
                     ball.VY = vy;
 
-                    brickStreak = 0;
+                    brickStreak = 0;          // Reset streak and multiplier on paddle hit
                     scoreMultiplier = 1;
                 }
             }
-
-
-
-            // Redraw everything
+            // Invalidate form to trigger repaint with updated game state
             Invalidate();
         }
 
-        // ---- HELPER: Ball Hits Rect ----
+        // Helper method to check if a ball intersects a rectangle (overlap test)
         private bool BallHitsRect(Ball ball, Rectangle rect)
         {
-            if (ball == null) return false; // Safe check!
+            if (ball == null) return false; // Safety check in case ball is null
             return
                 ball.X + ball.Radius * 2 >= rect.X &&
                 ball.X <= rect.X + rect.Width &&
                 ball.Y + ball.Radius * 2 >= rect.Y &&
                 ball.Y <= rect.Y + rect.Height;
         }
+
+        // Overload for Ball and Brick collision check by converting brick to rectangle
         private bool BallHitsRect(Ball ball, Brick b)
         {
             return BallHitsRect(
@@ -389,44 +413,55 @@ namespace BrickBreaker
             );
         }
 
-        // ---- INPUT HANDLING ----
+        // Keyboard handler for key press events
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
+            // Mark left or right pressed flags
             if (e.KeyCode == Keys.Left) leftPressed = true;
             if (e.KeyCode == Keys.Right) rightPressed = true;
 
-            // If game over and SPACE is pressed, restart
+            // If game over and spacebar pressed, restart game
             if (isGameOver && e.KeyCode == Keys.Space)
             {
                 RestartGame();
             }
+
+            // Toggle pause state with 'P' key
             if (e.KeyCode == Keys.P)
             {
-                isPaused = !isPaused;     // Toggle pause mode
-                Invalidate();             // Force redraw to display "Paused" message
+                isPaused = !isPaused;     // Flip pause status
+                Invalidate();             // Redraw to show pause message
             }
         }
 
+        // Restart the game state to initial values
         private void RestartGame()
         {
-            // Reset all bricks
+            // Make all bricks visible again
             foreach (var brick in bricks)
                 brick.IsVisible = true;
 
+            score = 0;               // Reset score
+            brickStreak = 0;         // Reset streak count
+            scoreMultiplier = 1;     // Reset score multiplier
+            isGameOver = false;      // Clear game over flag
+            elapsedSeconds = 0;      // Reset elapsed time
 
+            gameTimer?.Start();
+            gameFinishedRaised = false;
+            isGameOver = false;
 
             score = 0;
             brickStreak = 0;
             scoreMultiplier = 1;
-            isGameOver = false;
             elapsedSeconds = 0;
 
             // Center paddle
             paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
             paddleY = playAreaRect.Bottom - PaddleHeight - 10;
 
-            // New ball (above paddle)
-            balls.Clear(); // remove any existing balls (from e.g. Multiball powerup)
+            // Clear all existing balls and add new single ball above paddle
+            balls.Clear();
             balls.Add(new Ball(
                 x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
                 y: paddleY - 50,
@@ -435,10 +470,41 @@ namespace BrickBreaker
             ));
         }
 
+        // Keyboard handler for key release events
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
+            // Unset flags on key release
             if (e.KeyCode == Keys.Left) leftPressed = false;
             if (e.KeyCode == Keys.Right) rightPressed = false;
+        }
+
+        private void TriggerGameOver()
+        {
+            if (isGameOver)
+            {
+                return;
+            }
+
+            isGameOver = true;
+            gameTimer?.Stop();
+            RaiseGameFinished();
+            Invalidate();
+        }
+
+        private void RaiseGameFinished()
+        {
+            if (gameFinishedRaised)
+            {
+                return;
+            }
+
+            gameFinishedRaised = true;
+            GameFinished?.Invoke(this, score);
+
+            if (CloseOnGameOver)
+            {
+                BeginInvoke(new Action(Close));
+            }
         }
     }
 }
