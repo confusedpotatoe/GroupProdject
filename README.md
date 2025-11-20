@@ -1,5 +1,6 @@
 # BrickBreaker
-![CI](https://github.com/confusedpotatoe/GroupProdject/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/confusedpotatoe/GroupProdject/actions/workflows/ci.yml/badge.svg)  [![codecov](https://codecov.io/gh/<user>/<repo>/branch/main/graph/badge.svg)](https://codecov.io/gh/<user>/<repo>)
+
 
 BrickBreaker is a .NET 9 console remake of the classic paddle-and-bricks arcade game.  
 This project includes Spectre.Console menus, a frame-based renderer, soundtrack playback via `NAudio`, and Supabase/PostgreSQL storage for players and leaderboards.
