@@ -1,14 +1,12 @@
 ﻿using BrickBreaker.UI.Ui.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BrickBreaker.UI.Ui.Interfaces
 {
+    // interface for displaying the login menu
+    // handles user choices related to login options
     public interface ILoginMenu
     {
+        // shows the login menu and returns the user's choice
         LoginMenuChoice Show();
     }
 }

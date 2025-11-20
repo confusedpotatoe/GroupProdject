@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BrickBreaker.UI.Ui.Enums
+﻿namespace BrickBreaker.UI.Ui.Enums
 {
+    // Represents the various options available in the gameplay menu
+    // Allows users to navigate through different gameplay-related actions
+    // Connected to the IGameplayMenu interface
+    // Used in UiManager to handle user choices in the gameplay menu
     public enum GameplayMenuChoice
     {
         Start,
