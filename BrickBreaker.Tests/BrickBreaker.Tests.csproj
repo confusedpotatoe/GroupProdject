@@ -36,7 +36,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\BrickBreaker.Core\BrickBreaker.Core.csproj" />
 		<ProjectReference Include="..\BrickBreaker.Storage\BrickBreaker.Storage.csproj" />
-		<ProjectReference Include="..\BrickBreaker.UI\BrickBreaker.UI.csproj" />
 	</ItemGroup>
 
 </Project>
