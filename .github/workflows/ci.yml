@@ -25,3 +25,12 @@ jobs:
       - name: Run tests
         run: dotnet test --configuration Release --no-build
 
+      - name: Run tests with coverage
+        run: dotnet test BrickBreaker.Tests/BrickBreaker.Tests.csproj --collect:"XPlat Code Coverage"
+     
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
