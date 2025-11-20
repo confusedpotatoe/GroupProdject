@@ -18,11 +18,12 @@ namespace BrickBreaker
 
 
         // --- Graphics Resources ---
-        private Font fontScore = new Font("Arial", 18, FontStyle.Bold);
-        private Font fontMultiplier = new Font("Arial", 16, FontStyle.Bold);
-        private Font fontGameOver = new Font("Arial", 20, FontStyle.Bold);
-        private Font fontLaunch = new Font("Arial", 16, FontStyle.Bold);
-        private Pen brickBorderPen = new Pen(Color.DarkGray, 1);
+        private Font fontScore = new Font("Arial", 18, FontStyle.Bold); // Score font
+        private Font fontMultiplier = new Font("Arial", 18, FontStyle.Bold); // Multiplier font
+        private Font fontGameOver = new Font("Arial", 20, FontStyle.Bold); // Game Over font
+        private Font fontTime = new Font("Arial", 18, FontStyle.Bold); // Time font
+        private Font fontLaunch = new Font("Arial", 16, FontStyle.Bold); // Launch instruction font
+        private Pen brickBorderPen = new Pen(Color.DarkGray, 1); // Pen for brick borders
 
         // --- Ball constants ---
         private const int BallRadius = 7;                // Radius of the ball
@@ -36,14 +37,14 @@ namespace BrickBreaker
         private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
 
 
-        // Paddle blinking effect variables
+        // --- Paddle blinking effect variables ---
         private bool isPaddleBlinking = false;
         private int paddleBlinkCounter = 0;
         private Color normalPaddleColor = Color.FromArgb(36, 162, 255);
         private Color blinkPaddleColor = Color.OrangeRed;
         private int paddleExtenderTicksLeft = 0; // Number of ticks left for paddle extender effect
 
-        // Paddle movement variables
+        // -- Paddle movement variables ---
         private double paddleX;                              // Current X position of the paddle (floating point for smooth movement)
         private int paddleY;                                 // Fixed Y position of paddle
         private bool leftPressed, rightPressed;             // Whether left or right keys are currently pressed
@@ -53,8 +54,8 @@ namespace BrickBreaker
         private const int BrickCols = 10;                  // Number of brick columns
         private const int BrickWidth = 60;                 // Width of each brick
         private const int BrickHeight = 25;                // Height of each brick
-        private int BrickStartX; // calculated in constructor
-        private int BrickStartY; // calculated in constructor
+        private int BrickStartX;                            // calculated in constructor
+        private int BrickStartY;                            // calculated in constructor
         private const int BrickXSpacing = 70;               // Horizontal spacing between bricks
         private const int BrickYSpacing = 30;               // Vertical spacing between bricks
         private double timeSinceColorChange = 0;            // Timer for brick color changes
@@ -126,10 +127,12 @@ namespace BrickBreaker
             g.Clear(Color.Black);
 
             // 1. Draw HUD (Using the class-level fonts)
-            int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60;
-            g.DrawString($"Time: {minutes:D2}:{seconds:D2}", fontScore, Brushes.White, playAreaRect.Left + 420, playAreaRect.Top - 40);
-            g.DrawString($"Score: {score}", fontScore, Brushes.Yellow, playAreaRect.Left, playAreaRect.Top - 40);
-            g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 180, playAreaRect.Top - 40);
+            int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60; 
+            g.DrawString($" {minutes:D2}:{seconds:D2}", fontTime, Brushes.White, playAreaRect.Left + 620, playAreaRect.Top - 40); // Time display
+
+            g.DrawString($"Score: {score}", fontScore, Brushes.Yellow, playAreaRect.Left, playAreaRect.Top - 40); // Score display
+
+            g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 200, playAreaRect.Top - 40); // Multiplier display
 
             // 2. Draw Play Area
             // --- NEW: Generate the rainbow color ---
