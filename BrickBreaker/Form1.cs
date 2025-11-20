@@ -2,6 +2,10 @@ namespace BrickBreaker
 {
     public partial class Form1 : Form
     {
+        public event EventHandler<int>? GameFinished;
+        public bool CloseOnGameOver { get; set; }
+        public int LatestScore => score;
+
         // --- Game constants ---
         private const int WindowWidth = 800;            // Width of the game window
         private const int WindowHeight = 800;           // Height of the game window
@@ -24,7 +28,7 @@ namespace BrickBreaker
         private int brickStreak = 0;                        // Count of bricks hit in current ball bounce streak
         private int scoreMultiplier = 1;                    // Score multiplier based on streak
         private bool isPaused = false;                      // Game pause status
-        private double timeSinceColorChange = 0; // Tid sedan senaste f‰rgbyte
+        private double timeSinceColorChange = 0; // Tid sedan senaste f√§rgbyte
         private double colorChangeInterval = 2; // Byte intervall i sekunder
 
         // --- Game state ---
@@ -35,6 +39,7 @@ namespace BrickBreaker
         private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
         private Random rand = new Random();                 // Random number generator for colors/powerups
         private bool isGameOver = false;                    // Game over state
+        private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
         private double elapsedSeconds = 0;                  // Total elapsed time in seconds
 
         // Paddle movement variables
@@ -255,7 +260,7 @@ namespace BrickBreaker
                         brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
                     }
                 }
-                timeSinceColorChange = 0; // Nollst‰ll timern
+                timeSinceColorChange = 0; // Nollst√§ll timern
             }
             // Move paddle left or right if respective arrow keys are pressed, constrained within play area horizontally
             if (leftPressed && paddleX > playAreaRect.Left)
@@ -300,8 +305,8 @@ namespace BrickBreaker
                     balls.Remove(ball);
                     if (balls.Count == 0)
                     {
-                        isGameOver = true;
-                        return; // Stop further processing as game ended
+                        TriggerGameOver();
+                        return;
                     }
                     continue;
                 }
@@ -442,7 +447,16 @@ namespace BrickBreaker
             isGameOver = false;      // Clear game over flag
             elapsedSeconds = 0;      // Reset elapsed time
 
-            // Re-center paddle at start position
+            gameTimer?.Start();
+            gameFinishedRaised = false;
+            isGameOver = false;
+
+            score = 0;
+            brickStreak = 0;
+            scoreMultiplier = 1;
+            elapsedSeconds = 0;
+
+            // Center paddle
             paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
             paddleY = playAreaRect.Bottom - PaddleHeight - 10;
 
@@ -462,6 +476,35 @@ namespace BrickBreaker
             // Unset flags on key release
             if (e.KeyCode == Keys.Left) leftPressed = false;
             if (e.KeyCode == Keys.Right) rightPressed = false;
+        }
+
+        private void TriggerGameOver()
+        {
+            if (isGameOver)
+            {
+                return;
+            }
+
+            isGameOver = true;
+            gameTimer?.Stop();
+            RaiseGameFinished();
+            Invalidate();
+        }
+
+        private void RaiseGameFinished()
+        {
+            if (gameFinishedRaised)
+            {
+                return;
+            }
+
+            gameFinishedRaised = true;
+            GameFinished?.Invoke(this, score);
+
+            if (CloseOnGameOver)
+            {
+                BeginInvoke(new Action(Close));
+            }
         }
     }
 }
