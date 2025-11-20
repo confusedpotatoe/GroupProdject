@@ -5,14 +5,14 @@
 BrickBreaker is a .NET 9 console remake of the classic paddle-and-bricks arcade game.  
 This project includes Spectre.Console menus, a frame-based renderer, soundtrack playback via `NAudio`, and Supabase/PostgreSQL storage for players and leaderboards.
 
-## Overview
+## Features
 
-- **Two gameplay modes** – log in for tracked scores or jump into Quick Play without an account.
-- **State-machine UI** – Spectre.Console drives login, registration, leaderboard, and gameplay menus with progress indicators and dialogs.
-- **Feature-complete engine** – multi-level brick layouts, a 60 FPS loop, paddle physics, multi-ball + paddle-extend power-ups, pause/music controls, and animated score pops.
-- **Hosted leaderboard** – usernames, passwords, and timestamped scores are persisted to Supabase PostgreSQL when a connection string is configured.
-- **Offline fallback** – if the connection string is missing, the app still runs with disabled stores and warns that auth/leaderboard actions are skipped.
-- **Automated tests** – unit tests cover core auth + leaderboard flows using the abstractions in `BrickBreaker.Core`.
+- **Spectre.Console UX** – A state-machine menu flow wraps registration, login, best-score lookup, leaderboard browsing, Quick Play, and exit options.
+- **Quick Play vs. authenticated mode** – Jump straight into a run without an account or log in to unlock tracked scores, database persistence, and the ability to review your personal best directly from the gameplay menu.
+- **Arcade-style engine** – A 60 FPS loop renders five levels, score multipliers, animated score pops, and blinking paddle warnings before power-ups expire. Collision handling supports multi-ball, paddle-extend power-ups, color-coded brick layers, and smooth paddle physics.
+- **Soundtrack + controls** – `NAudio` streams a rotating playlist from `Assets/Sounds`, with in-game controls for pause/resume (`Space` for gameplay, `P` for music), next track (`N`), and instant exit (`Esc`).
+- **Supabase/PostgreSQL persistence** – Hashed passwords, usernames, best-score lookups, and the Top-10 leaderboard are written through `BrickBreaker.Storage` when a connection string is present. The UI clearly warns when offline and falls back to disabled in-memory stores so the game still runs.
+- **Automated testing** – `BrickBreaker.Tests` contains xUnit coverage for authentication and leaderboard logic against the shared abstractions.
 
 ## Project layout
 
@@ -69,9 +69,10 @@ When present, registration/login, leaderboard submissions, per-user best scores,
 
 ### Controls & tips
 
-- `←` / `→` move the paddle, `Space` toggles pause.
-- `N` skips to the next soundtrack track, `P` toggles music pause.
+- `←` / `→` move the paddle, `↑` launches a tethered ball, `Space` toggles gameplay pause, and `Esc` quits the current run.
+- `N` skips to the next soundtrack track, `P` toggles music pause/resume.
 - Quick Play skips authentication and does not attempt to submit scores.
+- Logged-in players can open the gameplay menu after each run to view their best score or browse the Top-10 Spectre console table.
 
 ## Tests
 
