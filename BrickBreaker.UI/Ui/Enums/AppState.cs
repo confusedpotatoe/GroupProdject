@@ -1,18 +1,11 @@
-﻿namespace BrickBreaker.UI.Ui.Enums
-{
+﻿namespace BrickBreaker.UI.Ui.Enums;
 
-    // enumberation representing different states of the application
-    // trigger transitions between different screens and functionalities
-
-namespace BrickBreaker.UI.Ui.Enums
+// Represents the major states the UI can be in to drive screen changes.
+public enum AppState
 {
-    //AppState represents the different states the application can be in, out of the following. 
-    public enum AppState
-    {
-        LoginMenu, // The application is showing the login menu (start screen).
-        GameplayMenu, // The user is logged in or selected quick play and is viewing gameplay-related options.
-        Playing, // The game itself is running.
-        Exit // The application should close.
-    }
+    LoginMenu,      // The application is showing the login menu (start screen).
+    GameplayMenu,   // The user is logged in or selected quick play.
+    Playing,        // The game itself is running.
+    Exit            // The application should close.
 }
 
