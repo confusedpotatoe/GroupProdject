@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Drawing.Text;
 
 namespace BrickBreaker
 {
@@ -10,19 +11,24 @@ namespace BrickBreaker
         public bool CloseOnGameOver { get; set; }
         public int LatestScore => score;
 
+
+
         // --- Window constants ---
         private int WindowWidth = 800;            // Width of the game window
         private int WindowHeight = 800;           // Height of the game window
         private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
         private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
 
+        // --- Font Resources ---
+        private PrivateFontCollection pfc = new PrivateFontCollection();
+        private Font fontcurrentLevel;
+        private Font fontScore;
+        private Font fontMultiplier;
+        private Font fontGameOver;
+        private Font fontTime;
+        private Font fontLaunch;
 
         // --- Graphics Resources ---
-        private Font fontScore = new Font("Arial", 18, FontStyle.Bold); // Score font
-        private Font fontMultiplier = new Font("Arial", 18, FontStyle.Bold); // Multiplier font
-        private Font fontGameOver = new Font("Arial", 20, FontStyle.Bold); // Game Over font
-        private Font fontTime = new Font("Arial", 18, FontStyle.Bold); // Time font
-        private Font fontLaunch = new Font("Arial", 16, FontStyle.Bold); // Launch instruction font
         private Pen brickBorderPen = new Pen(Color.DarkGray, 1); // Pen for brick borders
 
         // --- Ball constants ---
@@ -87,6 +93,8 @@ namespace BrickBreaker
         {
             InitializeComponent();
 
+            LoadPixelFont();
+
             // Default start in Fullscreen
             this.FormBorderStyle = FormBorderStyle.None;
             this.WindowState = FormWindowState.Maximized;
@@ -120,30 +128,63 @@ namespace BrickBreaker
             this.KeyUp += Form1_KeyUp;
         }
 
+        private void LoadPixelFont()
+        {
+            // The file name must match EXACTLY what you dragged into the project
+            string fontFileName = "PressStart2P-Regular.ttf";
+
+            // Combine with the path where the .exe runs
+            string fontPath = Path.Combine(Application.StartupPath, fontFileName);
+
+            if (File.Exists(fontPath))
+            {
+                // Add font to collection
+                pfc.AddFontFile(fontPath);
+
+                // Create fonts using the loaded family (Index 0 is the font we just added)
+                FontFamily pixelFamily = pfc.Families[0];
+
+                // Adjust sizes (Pixel fonts usually need to be smaller than Arial to look good)
+                fontScore = new Font(pixelFamily, 12, FontStyle.Regular);
+                fontMultiplier = new Font(pixelFamily, 12, FontStyle.Regular);
+                fontcurrentLevel = new Font(pixelFamily, 12, FontStyle.Regular);
+                fontTime = new Font(pixelFamily, 12, FontStyle.Regular);
+                fontLaunch = new Font(pixelFamily, 10, FontStyle.Regular);
+                fontGameOver = new Font(pixelFamily, 24, FontStyle.Bold);
+            }
+            else
+            {
+                // FALLBACK: If the file isn't found, use standard fonts so the game doesn't crash
+                MessageBox.Show("Font file not found! Using default fonts.");
+                fontScore = new Font("Consolas", 18, FontStyle.Bold);
+                fontMultiplier = new Font("Consolas", 18, FontStyle.Bold);
+                fontTime = new Font("Consolas", 18, FontStyle.Bold);
+                fontLaunch = new Font("Arial", 16, FontStyle.Bold);
+                fontGameOver = new Font("Arial", 20, FontStyle.Bold);
+            }
+        }
+
+       
         // Paint event handler to render the game elements each frame
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
             g.Clear(Color.Black);
 
-            // 1. Draw HUD (Using the class-level fonts)
-            int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60; 
-            g.DrawString($" {minutes:D2}:{seconds:D2}", fontTime, Brushes.White, playAreaRect.Left + 620, playAreaRect.Top - 40); // Time display
+            // makes pixel fonts look crisp instead of blurry
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
 
-            g.DrawString($"Score: {score}", fontScore, Brushes.Yellow, playAreaRect.Left, playAreaRect.Top - 40); // Score display
+            g.Clear(Color.Black);
 
-            g.DrawString($"Multiplier: x{scoreMultiplier}", fontMultiplier, Brushes.Orange, playAreaRect.Left + 200, playAreaRect.Top - 40); // Multiplier display
-
-            // 2. Draw Play Area
-            // --- NEW: Generate the rainbow color ---
+            // 1. Draw Play Area
             // Hue = borderHue, Saturation = 1.0 (full), Value = 1.0 (bright)
             Color animatedBorderColor = ColorFromHSV(borderHue, 1.0f, 1.0f);
-            using (Pen borderPen = new Pen(animatedBorderColor, 4))
+            using (Pen borderPen = new Pen(animatedBorderColor, 12))
                 g.DrawRectangle(borderPen, playAreaRect);
             using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
                 g.FillRectangle(bgBrush, playAreaRect);
-           
-            // 3. Draw Game Objects
+
+            // 2. Draw Game Objects
             DrawBricks(g);
             DrawPaddle(g);
             DrawBalls(g);
@@ -151,12 +192,56 @@ namespace BrickBreaker
             foreach (var p in powerUps) p.Draw(g);
             foreach (var popup in scorePopups) popup.Draw(g);
 
+            // 3. Draw HUD (Score, Multiplier, Time) IN BOXES
+            int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60;
+            string timeStr = $"{minutes:D2}:{seconds:D2}";
+
+            // Calculate Y position for the HUD boxes (slightly above the play area)
+            int hudY = playAreaRect.Top - 50;
+
+            // Draw Score Box
+            DrawStatBox(g, $"Score: {score}", fontScore, Brushes.White, playAreaRect.Left, hudY);
+
+            // Draw Multiplier Box
+            DrawStatBox(g, $" x{scoreMultiplier}", fontMultiplier, Brushes.White, playAreaRect.Left + 150, hudY);
+
+            // Draw Time Box (Aligned to the right side of play area)
+            // We calculate width roughly to align it right, or just use your specific offset
+            DrawStatBox(g, timeStr, fontTime, Brushes.White, playAreaRect.Left + 590, hudY);
+
+            string levelStr = $"Level {currentLevel}";
+
+            // Let's adjust X slightly to ensure it doesn't overlap
+            float levelX = playAreaRect.Left + 300;
+            float levelY = hudY + 6;
+
+            // CRITICAL STEP 1: Check if font is loaded (Prevents crash)
+            Font safeFont = fontcurrentLevel ?? new Font("Arial", 12, FontStyle.Bold);
+
+            // CRITICAL STEP 2: DRAW THE SHADOW (Offset by 2 pixels)
+            // This makes it visible even if it overlaps something
+            g.DrawString(levelStr, safeFont, Brushes.Black, levelX + 2, levelY + 2);
+
+            // CRITICAL STEP 3: DRAW THE TEXT
+            // Using Cyan so it stands out from the White Score/Time
+            g.DrawString(levelStr, safeFont, Brushes.White, levelX, levelY);
+
+
+
+
             // 4. Draw Game Over / Pause Text
             if (isGameOver)
             {
                 string overText = "Game Over! Press SPACE to restart";
                 SizeF sz = g.MeasureString(overText, fontGameOver);
                 float cx = (ClientSize.Width - sz.Width) / 2, cy = (ClientSize.Height - sz.Height) / 2;
+
+                // Draw a box behind Game Over text too for better visibility
+                using (SolidBrush dimBrush = new SolidBrush(Color.FromArgb(150, 0, 0, 0)))
+                {
+                    g.FillRectangle(dimBrush, 0, 0, ClientSize.Width, ClientSize.Height);
+                }
+
                 g.DrawString(overText, fontGameOver, Brushes.Red, cx, cy);
             }
             else if (ballReadyToShoot && !isPaused)
@@ -167,6 +252,34 @@ namespace BrickBreaker
                 float y = paddleY - 80;
                 g.DrawString(launchText, fontLaunch, Brushes.White, x, y);
             }
+        }
+
+        // Helper method to draw text inside a styled box
+        private void DrawStatBox(Graphics g, string text, Font font, Brush textBrush, int x, int y)
+        {
+            // Measure how big the text is
+            SizeF textSize = g.MeasureString(text, font);
+
+            // Define Padding (space between text and border)
+            int padding = 6;
+
+            // Create the rectangle for the box
+            Rectangle boxRect = new Rectangle(x, y, (int)textSize.Width + (padding * 2), (int)textSize.Height + (padding * 2));
+
+            // Draw the Box Background 
+            using (Brush boxBg = new SolidBrush(Color.FromArgb(0, 0, 20)))
+            {
+                g.FillRectangle(boxBg, boxRect);
+            }
+
+            // Draw the Box Border (White/Light Gray)
+            using (Pen boxPen = new Pen(Color.LightGray, 2))
+            {
+                g.DrawRectangle(boxPen, boxRect);
+            }
+
+            // Draw the Text inside the box
+            g.DrawString(text, font, textBrush, x + padding, y + padding);
         }
 
         // TODO: Implement so medium difficulty has some moving bricks, and hard has some indestructible ones, or more hits aswell, and moving bricks
@@ -275,13 +388,15 @@ namespace BrickBreaker
                 if (brick.IsVisible)
                 {
                     // We still need a new Brush because colors change per brick
+                    Rectangle r = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
                     using (SolidBrush bBrush = new SolidBrush(brick.BrickColor))
                     {
-                        var r = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
                         g.FillRectangle(bBrush, r);
-
-                        // Re-use the class-level pen (brickBorderPen) instead of creating a new one
-                        g.DrawRectangle(brickBorderPen, r);
+                    }
+                    using (Pen outlinePen = new Pen(Color.Black, 2))
+                    {
+                        // This draws the border on TOP of the filled color
+                        g.DrawRectangle(outlinePen, r);
                     }
                 }
             }
