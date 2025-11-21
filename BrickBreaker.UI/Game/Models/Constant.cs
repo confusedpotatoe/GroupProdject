@@ -1,7 +1,7 @@
 ﻿namespace BrickBreaker.Game.Models
 {
     public static class Constants // Static class containing game constants
-    { 
+    {
         // Game Board Dimensions
         public const int W = 60; // Width of the game board
         public const int H = 24; // Height of the game board

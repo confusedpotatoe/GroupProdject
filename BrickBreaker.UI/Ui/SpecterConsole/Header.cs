@@ -1,15 +1,14 @@
 ﻿using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BrickBreaker.UI.Ui.SpecterConsole
 {
+    // Displays the header for the Brick Breaker game
+    // Use FigletText from Spectre.Console
+
     public class Header
     {
-        public void TitleHeader() {
+        public void TitleHeader()
+        {
             AnsiConsole.Write(
                 new FigletText("Brick Breaker")
                     .Centered()

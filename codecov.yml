@@ -1,0 +1,31 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: false
+        target: auto
+        threshold: 5%
+
+# Common exclusions:
+#  * build artifacts (bin/obj)
+#  * generated/designer files
+#  * assets/config files that cannot contain executable code
+#  * test projects (their lines should not count against the product code)
+ignore:
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/*.designer.cs"
+  - "**/*.g.cs"
+  - "**/*.g.i.cs"
+  - "**/*.Generated.cs"
+  - "BrickBreaker.UI/Assets/**"
+  - "BrickBreaker.Storage/Properties/appsettings.json"
+  - "BrickBreaker.Tests/**"
+  # Console rendering, state-machine UI, and Spectre front-end pieces are highly coupled to
+  # terminal state and ANSI cursor positions, so we accept visual/manual testing there.
+  - "BrickBreaker.UI/Game/Renderer/**"
+  - "BrickBreaker.UI/Ui/**"
+  - "BrickBreaker.UI/Game/Infrastructure/**"
+  # Native interop/audio glue is similarly impractical to cover in CI.
+  - "BrickBreaker.UI/Game/Systems/ConsoleRenderer.cs"
+  - "BrickBreaker.UI/Game/BrickBreakerGame.cs"

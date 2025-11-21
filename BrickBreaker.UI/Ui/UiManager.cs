@@ -1,21 +1,18 @@
 ﻿using BrickBreaker.UI.Ui.Enums;
 using BrickBreaker.UI.Ui.SpecterConsole;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BrickBreaker.UI.Ui
 {
-    // Creating a class UIManager that handles which UI menu is shown
+    // Manages the overall UI flow of the Brick Breaker application
+    // Handles transitions between different menus based on user input
+
     public class UiManager
     {
-        // Creating instances of the Login and Gameplay menus
+        // Enum representing the different states of the application
         private readonly LoginMenu _loginMenu = new LoginMenu();
         private readonly GameplayMenu _gameplayMenu = new GameplayMenu();
 
-        // Stores the currently logged-in user (null means no user)
+        // Stores the current logged-in user
         private string? currentUser = null;
 
         // Main loop that controls the application state (AppState)
@@ -29,14 +26,15 @@ namespace BrickBreaker.UI.Ui
                 // Switch to the appropriate handler based on the current application state
                 state = state switch
                 {
-                    AppState.LoginMenu => HandleLoginMenu(),
+                    AppState.LoginMenu => HandleLoginMenu(), 
                     AppState.GameplayMenu => HandleGameplayMenu(),
                     _ => AppState.Exit
                 };
             }
         }
 
-        // Handles user choices in the login menu
+        // Handles the Login Menu state and returns the next application state
+        // Triggers by appstate loginmenu
         private AppState HandleLoginMenu()
         {
             var choice = _loginMenu.Show(); // Show login menu and store the user's selected option in 'choice'

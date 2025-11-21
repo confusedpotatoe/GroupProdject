@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace BrickBreaker.UI.Ui.Enums
+{
 
+    // enumberation representing different states of the application
+    // trigger transitions between different screens and functionalities
 
 namespace BrickBreaker.UI.Ui.Enums
 {

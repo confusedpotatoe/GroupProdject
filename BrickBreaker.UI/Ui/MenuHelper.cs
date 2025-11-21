@@ -1,26 +1,18 @@
-﻿using BrickBreaker.Logic;
-using BrickBreaker.Models;
-using Microsoft.VisualBasic;
-using Spectre.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Spectre.Console;
 
 namespace BrickBreaker.UI.Ui
 {
+    // Helper class to display menus using Spectre.Console
+    // Generic method to show menus for different enum types
+
     public class MenuHelper
     {
         public T ShowMenu<T>(string title, string? welcomeMessage = null, Color? titleColor = null, Color? highlightColor = null) where T : Enum
         {
-            // Determine the title and highlight colors.
-            // If no colors are provided, fallback to default values.
             var tColor = titleColor ?? Color.Orange1;
             var hColor = highlightColor ?? Color.White;
 
-            // Render the menu title using a Figlet font.
-            // This creates large ASCII-style text and centers it on the screen.
+            // Display title in Figlet font
             AnsiConsole.Write(
                 new FigletText(title)
                     .Centered()
@@ -55,6 +47,7 @@ namespace BrickBreaker.UI.Ui
                     {
                         var text = choice.ToString();
 
+                        // Highlight "Exit" and "Logout" in red
                         return text is "Exit" or "Logout"
                             ? $"[red]{text}[/]"  // Red text for important actions
                             : text;              // Default rendering for all other items

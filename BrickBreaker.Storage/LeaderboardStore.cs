@@ -26,7 +26,7 @@ public sealed class LeaderboardStore : ILeaderboardStore
     //Adds a highscore to the table leaderboard 
     public void Add(ScoreEntry entry)
     {
-       if (entry is null) throw new ArgumentException(nameof(entry));
+        if (entry is null) throw new ArgumentException(nameof(entry));
 
        //insert values into the table
         const string sql = $"""

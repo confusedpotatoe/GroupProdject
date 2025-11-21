@@ -1,24 +1,21 @@
 using BrickBreaker.Game;
 using BrickBreaker.Logic;
-using BrickBreaker.Models;
 using BrickBreaker.Storage;
 using BrickBreaker.Ui;
-using BrickBreaker.UI.Ui;
 using BrickBreaker.UI.Ui.Enums;
 using BrickBreaker.UI.Ui.Interfaces;
 using BrickBreaker.UI.Ui.SpecterConsole;
 using Spectre.Console;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 class Program
 {
-    static string? currentUser = null ;
+    static string? currentUser = null;
     private static Leaderboard _lb = null!;
     private static Auth _auth = null!;
     private static bool _databaseAvailable = false;
 
-    // UI menus and dialogs
+    // UI menus and dialogs 
     static ILoginMenu _loginMenu = new LoginMenu();
     static IGameplayMenu _gameplayMenu = new GameplayMenu();
     static IConsoleDialogs _dialogs = new ConsoleDialogs();
@@ -26,13 +23,17 @@ class Program
 
     static Header header = new Header();
 
+    // Application entry point
     static void Main()
     {
+        // Ensure UTF-8 encoding for console output
         Console.OutputEncoding = Encoding.UTF8;
 
         var storageConfig = new StorageConfiguration();
+        // Get the connection string for the database
         var connectionString = storageConfig.GetConnectionString();
 
+        // Initialize database stores based on the connection string
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
             var userStore = new UserStore(connectionString);
@@ -44,12 +45,17 @@ class Program
         }
         else
         {
+            // Fallback to disabled stores if connection string is missing
             _lb = new Leaderboard(new DisabledLeaderboardStore());
+            // Initialize authentication manager with disabled user store
             _auth = new Auth(new DisabledUserStore());
+            // Set database availability flag
             _databaseAvailable = false;
+            // Show warning about missing database configuration
             ShowDatabaseWarning("Supabase connection string missing. Database features are disabled until it is configured.");
         }
 
+        // Main application loop
         AppState state = AppState.LoginMenu;
 
         while (state != AppState.Exit)
@@ -64,9 +70,7 @@ class Program
         }
     }
 
-    // =========================
     // Login Menu Handler
-    // =========================
     static AppState HandleLoginMenu()
     {
         var choice = _loginMenu.Show();
@@ -98,11 +102,10 @@ class Program
         }
     }
 
-    // =========================
+
     // Gameplay Menu Handler
-    // =========================
     static AppState HandleGameplayMenu()
-    { 
+    {
         GameplayMenuChoice choice = _gameplayMenu.Show(currentUser ?? "guest");
 
         switch (choice)
@@ -129,21 +132,24 @@ class Program
         }
     }
 
-    // =========================
     // Playing Handler
-    // =========================
     static AppState HandlePlaying()
     {
         AnsiConsole.Clear();
         IGame game = new BrickBreakerGame();
+        // Run the game and get the final score
         int score = game.Run();
 
+        // Move cursor to lower part of the console
         int lowerLine = Console.WindowHeight - 4;
+        // Ensure we don't move the cursor above the current line
         Console.SetCursorPosition(0, lowerLine);
 
+        // Show final score message
         _dialogs.ShowMessage($"\nFinal score: {score}");
         if (currentMode != GameMode.QuickPlay)
         {
+            // Submit score to leaderboard if database is available
             if (_databaseAvailable)
             {
                 _lb.Submit(currentUser ?? "guest", score);
@@ -159,10 +165,7 @@ class Program
         return currentUser is null ? AppState.LoginMenu : AppState.GameplayMenu;
     }
 
-    // =========================
     // Helper methods
-    // =========================
-
     static void DoRegister()
     {
         if (!_databaseAvailable)
@@ -176,7 +179,7 @@ class Program
         username = (username ?? "").Trim();
 
         // Checks so username is not empty 
-        if(username.Length == 0)
+        if (username.Length == 0)
         {
             _dialogs.ShowMessage("Username can't be empty.");
             return;
@@ -191,12 +194,14 @@ class Program
 
         var password = _dialogs.PromptNewPassword();
 
+        // Attempt to register the new user/ add new user to the database
         bool ok = _auth.Register(username, password);
         _dialogs.ShowMessage(ok
             ? "Registration successful! You can now log in."
             : "Registration failed (empty or already exists).");
     }
 
+    // Login helper method
     static bool DoLogin()
     {
         if (!_databaseAvailable)
@@ -211,7 +216,7 @@ class Program
         {
             currentUser = username;
 
-            // === Loading bar AFTER successful login ===
+            //Loading bar animation AFTER successful login
             AnsiConsole.Progress()
                 .Columns(
                     new ProgressColumn[]
@@ -221,6 +226,7 @@ class Program
                     new PercentageColumn(),
                     new SpinnerColumn()
                     })
+                // Start the progress display
                 .Start(ctx =>
                 {
                     var verifyTask = ctx.AddTask("[yellow]Verifying user[/]");
@@ -236,21 +242,22 @@ class Program
 
             return true;
         }
-
         _dialogs.ShowMessage("Login failed (wrong username or password).");
         return false;
     }
 
-        static void ShowLeaderboard()
+    // Leaderboard display method
+    static void ShowLeaderboard()
+    {
+        AnsiConsole.Progress()
+        .Columns(new ProgressColumn[]
         {
-            AnsiConsole.Progress()
-            .Columns(new ProgressColumn[]
-            {
                 new TaskDescriptionColumn(),
                 new ProgressBarColumn(),
                 new PercentageColumn(),
                 new SpinnerColumn()
-            })
+        })
+
         .Start(ctx =>
             {
                 var task = ctx.AddTask("[green]Loading Scores[/]", maxValue: 100);
@@ -265,6 +272,7 @@ class Program
         AnsiConsole.Clear();
         header.TitleHeader();
 
+        // Check database availability
         if (!_databaseAvailable)
         {
             ShowDatabaseWarning("Leaderboard is unavailable because the Supabase connection string is missing.");
@@ -272,6 +280,7 @@ class Program
         }
 
         var top = _lb.Top(10);
+
         if (!top.Any())
         {
             _dialogs.ShowMessage("\nTop 10 leaderboard:\nNo scores yet.");
@@ -281,7 +290,6 @@ class Program
         var items = top.Select(s => (s.Username, s.Score, s.At));
         _dialogs.ShowLeaderboard(items);
     }
-
     static void ShowBestScore()
     {
         if (!_databaseAvailable)
@@ -302,21 +310,22 @@ class Program
                 $"\nYour best score: {best.Score} on {best.At.ToLocalTime():yyyy-MM-dd HH:mm}"
             );
         }
-
         _dialogs.Pause();
     }
 
-    // =========================
     // Input buffer helper
-    // =========================
     const int STD_INPUT_HANDLE = -10;
 
+    // gets the standard input handle for the console
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern IntPtr GetStdHandle(int nStdHandle);
 
+
+    // clears the console input buffer, to avoid leftover key presses affecting subsequent input
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool FlushConsoleInputBuffer(IntPtr hConsoleInput);
 
+    // Clears any pending input in the console input buffer
     static void ClearInputBuffer()
     {
         while (Console.KeyAvailable)
@@ -334,6 +343,7 @@ class Program
         }
     }
 
+    // Database warning display method
     static void ShowDatabaseWarning(string message)
     {
         var previousColor = Console.ForegroundColor;
