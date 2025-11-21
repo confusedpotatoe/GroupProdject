@@ -13,4 +13,10 @@
     <ProjectReference Include="../BrickBreaker.Core/BrickBreaker.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="PressStart2P-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
