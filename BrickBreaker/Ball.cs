@@ -6,6 +6,9 @@
     public double VY { get; set; }
     public int Radius { get; set; }
 
+    public int BrickStreak { get; set; } = 0;
+    public int Multiplier { get; set; } = 1;
+
     public Ball(int x, int y, double vx, double vy, int radius)
     {
         X = x;

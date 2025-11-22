@@ -5,293 +5,495 @@ namespace BrickBreaker
 {
     public partial class Form1 : Form
     {
+        // --- Events & Properties ---
         public event EventHandler<int>? GameFinished;
+
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         [Browsable(false)]
         public bool CloseOnGameOver { get; set; }
         public int LatestScore => score;
 
+        #region 1. Game Constants & Settings
+        // Window Layout
+        private const int PlayAreaMargin = 2;
+        private const int HudHeightOffset = 50;
+        private const int PaddleBottomMargin = 10;
 
+        // Gameplay Constants
+        private const int InitialBrickRows = 7;
+        private const int InitialBrickCols = 10;
+        private const int BrickWidth = 60;
+        private const int BrickHeight = 25;
+        private const int BrickXSpacing = 70;
+        private const int BrickYSpacing = 30;
+        private const int PaddleAreaHeight = 400;
 
-        // --- Window constants ---
-        private int WindowWidth = 800;            // Width of the game window
-        private int WindowHeight = 800;           // Height of the game window
-        private Rectangle playAreaRect;                     // Rectangle defining play area for bricks, paddle, ball
-        private const int PlayAreaMargin = 2;             // Margin of the play area from bricks (just padding)
+        // Physics
+        private const double BasePaddleSpeed = 13;
+        private const int BallRadius = 7;
+        #endregion
 
-        // --- Font Resources ---
-        private PrivateFontCollection pfc = new PrivateFontCollection();
-        private Font fontcurrentLevel;
-        private Font fontScore;
-        private Font fontMultiplier;
-        private Font fontGameOver;
-        private Font fontTime;
-        private Font fontLaunch;
+        #region 2. Game State
+        // Mechanics
+        private System.Windows.Forms.Timer gameTimer;
+        private Random rand = new Random();
+        private Rectangle playAreaRect;
+        private bool isPaused = false;
+        private bool isGameOver = false;
+        private bool gameFinishedRaised = false;
+        private bool ballReadyToShoot = true;
 
-        // --- Graphics Resources ---
-        private Pen brickBorderPen = new Pen(Color.DarkGray, 1); // Pen for brick borders
+        // Scoring & Stats
+        private int score = 0;
+        private int currentLevel = 1;
+        private double elapsedSeconds = 0;
 
-        // --- Ball constants ---
-        private const int BallRadius = 7;                // Radius of the ball
-        private bool ballReadyToShoot = true; // Indicates if ball is waiting on paddle to be shot
+        // Paddle State
+        private double paddleX;
+        private int paddleY;
+        private int currentPaddleWidth = 100;
+        private int originalPaddleWidth = 100;
+        private bool leftPressed, rightPressed;
 
-        // --- Paddle constants ---
-        private int PaddleWidth = 100;                    // Width of the paddle
-        private const int PaddleHeight = 20;              // Height of the paddle
-        private const double PaddleSpeed = 13;            // Speed at which paddle moves
-        private int originalPaddleWidth;                   // Store original paddle width for power-up resets
-        private const int PaddleAreaHeight = 400;         // Height of area below bricks for paddle/ball space
-
-
-        // --- Paddle blinking effect variables ---
+        // Visual Effects
+        private float borderHue = 0f;
+        private double timeSinceColorChange = 0;
         private bool isPaddleBlinking = false;
         private int paddleBlinkCounter = 0;
-        private Color normalPaddleColor = Color.FromArgb(36, 162, 255);
-        private Color blinkPaddleColor = Color.OrangeRed;
-        private int paddleExtenderTicksLeft = 0; // Number of ticks left for paddle extender effect
+        private int paddleExtenderTicksLeft = 0;
+        #endregion
 
-        // -- Paddle movement variables ---
-        private double paddleX;                              // Current X position of the paddle (floating point for smooth movement)
-        private int paddleY;                                 // Fixed Y position of paddle
-        private bool leftPressed, rightPressed;             // Whether left or right keys are currently pressed
+        #region 3. Game Entities
+        // Ball, Brick, PowerUp, ScorePopup classes are defineS  in separate files
+        private List<Ball> balls = new List<Ball>();
+        private List<Brick> bricks = new List<Brick>();
+        private List<PowerUp> powerUps = new List<PowerUp>();
+        private List<ScorePopup> scorePopups = new List<ScorePopup>();
+        #endregion
 
-        // --- Brick constants ---
-        private const int BrickRows = 7;                   // Number of brick rows
-        private const int BrickCols = 10;                  // Number of brick columns
-        private const int BrickWidth = 60;                 // Width of each brick
-        private const int BrickHeight = 25;                // Height of each brick
-        private int BrickStartX;                            // calculated in constructor
-        private int BrickStartY;                            // calculated in constructor
-        private const int BrickXSpacing = 70;               // Horizontal spacing between bricks
-        private const int BrickYSpacing = 30;               // Vertical spacing between bricks
-        private double timeSinceColorChange = 0;            // Timer for brick color changes
-        private double colorChangeInterval = 2;             // Interval in seconds for brick color changes
+        #region 4. Assets (Fonts & Colors)
+        private PrivateFontCollection fontCollection = new PrivateFontCollection();
+        private Font fontScore, fontMultiplier, fontCurrentLevel, fontTime, fontLaunch, fontGameOver;
+        private Color colorPaddleNormal = Color.FromArgb(36, 162, 255);
+        private Color colorPaddleBlink = Color.OrangeRed;
+        #endregion
 
-        // --- Game variables ---
-        private int score = 0;                              // Current player score
-        private int brickStreak = 0;                        // Count of bricks hit in current ball bounce streak
-        private int scoreMultiplier = 1;                    // Score multiplier based on streak
-        private bool isPaused = false;                      // Game pause status
-        private bool isGameOver = false;                    // Game over state
-        private int currentLevel = 1;                      // Current level
-        private bool gameFinishedRaised = false;            // Ensures GameFinished fires only once
-        private double elapsedSeconds = 0;                  // Total elapsed time in seconds
-
-        // --- Game state ---
-        private System.Windows.Forms.Timer gameTimer;      // Timer controlling game update ticks
-        private List<Ball> balls = new List<Ball>();       // List of balls in play (for multiball)
-        private List<Brick> bricks;                         // List of bricks in the level
-        private List<PowerUp> powerUps = new List<PowerUp>();// List of active powerups falling
-        private List<ScorePopup> scorePopups = new List<ScorePopup>(); // List of score popup animations
-        private Random rand = new Random();                 // Random number generator for colors/powerups
-        private float borderHue = 0f;
-
-
-
-        // Constructor: Initialize game form and components
         public Form1()
         {
             InitializeComponent();
+            InitializeFormSettings();
+            LoadFonts();
+            SetupGameLayout(); // Calculate positions
 
-            LoadPixelFont();
+            // Initialize Game
+            originalPaddleWidth = currentPaddleWidth;
+            StartLevel(1);
 
-            // Default start in Fullscreen
+            InitializeTimer();
+        }
+
+        private void InitializeFormSettings()
+        {
             this.FormBorderStyle = FormBorderStyle.None;
             this.WindowState = FormWindowState.Maximized;
             this.Bounds = Screen.PrimaryScreen.Bounds;
-
             this.MaximizeBox = false;
-            this.SizeGripStyle = SizeGripStyle.Hide;
             this.DoubleBuffered = true;
 
-            // Initialize lists
-            bricks = new List<Brick>();
-
-            // --- CALL THE NEW LAYOUT METHOD ---
-            SetupGameLayout();
-
-            // Initialize Paddle Width
-            originalPaddleWidth = PaddleWidth;
-            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
-
-            StartLevel(1);
-
-            // Timer Setup
-            gameTimer = new System.Windows.Forms.Timer();
-            gameTimer.Interval = 16;
-            gameTimer.Tick += GameTimer_Tick;
-            gameTimer.Start();
-
-            // Events
+            // Event Subscriptions
             this.Paint += Form1_Paint;
             this.KeyDown += Form1_KeyDown;
             this.KeyUp += Form1_KeyUp;
         }
 
-        private void LoadPixelFont()
+        private void InitializeTimer()
         {
-            // The file name must match EXACTLY what you dragged into the project
-            string fontFileName = "PressStart2P-Regular.ttf";
-
-            // Combine with the path where the .exe runs
-            string fontPath = Path.Combine(Application.StartupPath, fontFileName);
-
-            if (File.Exists(fontPath))
-            {
-                // Add font to collection
-                pfc.AddFontFile(fontPath);
-
-                // Create fonts using the loaded family (Index 0 is the font we just added)
-                FontFamily pixelFamily = pfc.Families[0];
-
-                // Adjust sizes (Pixel fonts usually need to be smaller than Arial to look good)
-                Font titleFont = new Font(pixelFamily, 18, FontStyle.Bold);
-                fontScore = new Font(pixelFamily, 12, FontStyle.Regular);
-                fontMultiplier = new Font(pixelFamily, 12, FontStyle.Regular);
-                fontcurrentLevel = new Font(pixelFamily, 12, FontStyle.Regular);
-                fontTime = new Font(pixelFamily, 12, FontStyle.Regular);
-                fontLaunch = new Font(pixelFamily, 10, FontStyle.Regular);
-                fontGameOver = new Font(pixelFamily, 24, FontStyle.Bold);
-            }
-            else
-            {
-                // FALLBACK: If the file isn't found, use standard fonts so the game doesn't crash
-                MessageBox.Show("Font file not found! Using default fonts.");
-                fontScore = new Font("Consolas", 18, FontStyle.Bold);
-                fontMultiplier = new Font("Consolas", 18, FontStyle.Bold);
-                fontTime = new Font("Consolas", 18, FontStyle.Bold);
-                fontLaunch = new Font("Arial", 16, FontStyle.Bold);
-                fontGameOver = new Font("Arial", 20, FontStyle.Bold);
-            }
+            gameTimer = new System.Windows.Forms.Timer();
+            gameTimer.Interval = 16; // ~60 FPS
+            gameTimer.Tick += GameTimer_Tick;
+            gameTimer.Start();
         }
 
+        // --- Main Game Loop (The Heart of the Game) ---
+        private void GameTimer_Tick(object sender, EventArgs e)
+        {
+            UpdateVisualEffects();
 
-        // Paint event handler to render the game elements each frame
+            if (isGameOver) return;
+            if (isPaused) { Invalidate(); return; }
+
+            double deltaTime = gameTimer.Interval / 1000.0;
+
+            // Update Timers
+            if (!ballReadyToShoot)
+            {
+                elapsedSeconds += deltaTime;
+                timeSinceColorChange += deltaTime;
+            }
+
+            // Update Entities
+            UpdateBrickColors();
+            UpdatePaddleMovement();
+            UpdatePowerUps();
+            UpdateBalls();
+            UpdatePopups();
+            UpdatePaddleEffects();
+
+            //Check Level Completion
+            CheckLevelProgression();
+
+            Invalidate(); // Trigger Repaint
+        }
+
+        // --- Rendering Logic ---
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
+            g.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit;
             g.Clear(Color.Black);
 
-            // makes pixel fonts look crisp instead of blurry
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
-
-            g.Clear(Color.Black);
-
-            // 1. Draw Play Area
-            // Hue = borderHue, Saturation = 1.0 (full), Value = 1.0 (bright)
-            Color animatedBorderColor = ColorFromHSV(borderHue, 1.0f, 1.0f);
-            using (Pen borderPen = new Pen(animatedBorderColor, 12))
-                g.DrawRectangle(borderPen, playAreaRect);
-            using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
-                g.FillRectangle(bgBrush, playAreaRect);
-
-            // 2. Draw Game Objects
+            DrawPlayArea(g);
             DrawBricks(g);
             DrawPaddle(g);
             DrawBalls(g);
 
+            // Draw transient effects
             foreach (var p in powerUps) p.Draw(g);
-            foreach (var popup in scorePopups) popup.Draw(g);
+            foreach (var pop in scorePopups) pop.Draw(g);
 
-            // 3. Draw HUD (Score, Multiplier, Time) IN BOXES
-            int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60;
-            string timeStr = $"{minutes:D2}:{seconds:D2}";
+            DrawHUD(g);
+            DrawOverlays(g); // Game Over, Launch Text, etc.
+        }
 
-            string Titel = "BrickBreaker";
-            Brush titleBrush = Brushes.White;
-            e.Graphics.DrawString(Titel, fontScore, titleBrush, playAreaRect.Left + (playAreaRect.Width - e.Graphics.MeasureString(Titel, fontScore).Width) / 2, playAreaRect.Top - 100);
+        #region Logic: Updates & Physics
 
+        private void UpdateBrickColors()
+        {
+            if (timeSinceColorChange < 2.0) return;
 
-
-            // Calculate Y position for the HUD boxes (slightly above the play area)
-            int hudY = playAreaRect.Top - 50;
-
-            // Draw Score Box
-            DrawStatBox(g, $"Score: {score}", fontScore, Brushes.White, playAreaRect.Left, hudY);
-
-            // Draw Multiplier Box
-            DrawStatBox(g, $" x{scoreMultiplier}", fontMultiplier, Brushes.White, playAreaRect.Left + 200, hudY);
-
-            // Draw Time Box (Aligned to the right side of play area)
-            // We calculate width roughly to align it right, or just use your specific offset
-            DrawStatBox(g, timeStr, fontTime, Brushes.White, playAreaRect.Left + 590, hudY);
-
-            string levelStr = $"Level {currentLevel}";
-
-            // Let's adjust X slightly to ensure it doesn't overlap
-            float levelX = playAreaRect.Left + 300;
-            float levelY = hudY + 6;
-
-            // CRITICAL STEP 1: Check if font is loaded (Prevents crash)
-            Font safeFont = fontcurrentLevel ?? new Font("Arial", 12, FontStyle.Bold);
-
-            // CRITICAL STEP 2: DRAW THE SHADOW (Offset by 2 pixels)
-            // This makes it visible even if it overlaps something
-            g.DrawString(levelStr, safeFont, Brushes.Black, levelX + 2, levelY + 2);
-
-            // CRITICAL STEP 3: DRAW THE TEXT
-            // Using Cyan so it stands out from the White Score/Time
-            g.DrawString(levelStr, safeFont, Brushes.White, levelX, levelY);
-
-
-
-
-            // 4. Draw Game Over / Pause Text
-            if (isGameOver)
+            foreach (var brick in bricks.Where(b => b.IsVisible))
             {
-                string overText = "Game Over! Press SPACE to restart";
-                SizeF sz = g.MeasureString(overText, fontGameOver);
-                float cx = (ClientSize.Width - sz.Width) / 2, cy = (ClientSize.Height - sz.Height) / 2;
+                brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
+            }
+            timeSinceColorChange = 0;
+        }
 
-                // Draw a box behind Game Over text too for better visibility
-                using (SolidBrush dimBrush = new SolidBrush(Color.FromArgb(150, 0, 0, 0)))
+        private void UpdatePaddleMovement()
+        {
+            if (leftPressed && paddleX > playAreaRect.Left)
+                paddleX -= BasePaddleSpeed;
+            if (rightPressed && paddleX < playAreaRect.Right - currentPaddleWidth)
+                paddleX += BasePaddleSpeed;
+        }
+
+        private void UpdateBalls()
+        {
+            // Iterate backwards to allow removal
+            for (int i = balls.Count - 1; i >= 0; i--)
+            {
+                var ball = balls[i];
+
+                if (ballReadyToShoot)
                 {
-                    g.FillRectangle(dimBrush, 0, 0, ClientSize.Width, ClientSize.Height);
+                    ball.X = (int)(paddleX + currentPaddleWidth / 2 - BallRadius);
+                    ball.Y = paddleY - 50;
+                    continue;
                 }
 
-                g.DrawString(overText, fontGameOver, Brushes.Red, cx, cy);
+                ball.UpdatePosition();
+                HandleBallCollisions(ball, i);
+            }
+        }
+
+        private void HandleBallCollisions(Ball ball, int ballIndex)
+        {
+            // Wall Collisions
+            if (ball.X <= playAreaRect.Left) { ball.X = playAreaRect.Left; ball.VX = -ball.VX; }
+            if (ball.X + ball.Radius * 2 >= playAreaRect.Right) { ball.X = playAreaRect.Right - ball.Radius * 2; ball.VX = -ball.VX; }
+            if (ball.Y <= playAreaRect.Top) { ball.Y = playAreaRect.Top; ball.VY = -ball.VY; }
+
+            // Floor Collision (BALL REMOVED)
+            if (ball.Y > playAreaRect.Bottom)
+            {
+                balls.RemoveAt(ballIndex);
+                if (balls.Count == 0) TriggerGameOver();
+                return;
+            }
+
+            //Brick Collisions
+            foreach (var brick in bricks.Where(b => b.IsVisible))
+            {
+                if (BallHitsRect(ball, new Rectangle(brick.X, brick.Y, brick.Width, brick.Height)))
+                {
+                    brick.IsVisible = false;
+                    ball.InvertVerticalVelocity();
+                    HandleScoring(ball, brick);
+                    TrySpawnPowerUp(brick.X + brick.Width / 2, brick.Y);
+                    break; // Hit one brick per frame max
+                }
+            }
+
+            // Paddle Collision
+            Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, currentPaddleWidth, 20);
+            if (BallHitsRect(ball, paddleRect))
+            {
+                HandlePaddleBounce(ball);
+            }
+        }
+
+        private void HandleScoring(Ball ball, Brick brick) // Called when a brick is hit
+        {
+            ball.BrickStreak++; 
+            ball.Multiplier = Math.Max(1, ball.BrickStreak);
+            int points = 10 * ball.Multiplier;
+            score += points;
+
+            scorePopups.Add(new ScorePopup(brick.X + brick.Width / 2, brick.Y, points));
+            if (ball.Multiplier > 1)
+                scorePopups.Add(new ScorePopup(brick.X + brick.Width / 2 + 50, brick.Y, $"x{ball.Multiplier}"));
+        }
+
+        // Adjust ball velocity based on where it hits the paddle
+        private void HandlePaddleBounce(Ball ball)
+        {
+            ball.BrickStreak = 0;
+            ball.Multiplier = 1;
+
+            // Calculate angle based on where it hit the paddle
+            double ballCenter = ball.X + ball.Radius;
+            double paddleCenter = paddleX + currentPaddleWidth / 2.0;
+            double hitPos = (ballCenter - paddleCenter) / (currentPaddleWidth / 2.0); // -1 (Left) to 1 (Right)
+
+            double speed = 9.0;
+            double maxX = speed * 0.75;
+            double newVX = hitPos * maxX;
+
+            // Enforce minimum horizontal angle so it doesn't get stuck vertically
+            if (Math.Abs(newVX) < 2.0) newVX = newVX < 0 ? -2.0 : 2.0;
+
+            ball.VX = newVX;
+            ball.VY = -Math.Sqrt(speed * speed - newVX * newVX); // Ensure consistent speed
+        }
+
+        // --Power-Up Logic
+        private void UpdatePowerUps()
+        {
+            for (int i = powerUps.Count - 1; i >= 0; i--)
+            {
+                var p = powerUps[i];
+                p.UpdatePosition();
+
+                if (p.Y > playAreaRect.Bottom)
+                {
+                    powerUps.RemoveAt(i);
+                    continue;
+                }
+
+                Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, currentPaddleWidth, 20);
+                if (paddleRect.IntersectsWith(new Rectangle(p.X, p.Y, p.Width, p.Height)))
+                {
+                    ActivatePowerUp(p.Type);
+                    powerUps.RemoveAt(i);
+                }
+            }
+        }
+        // --Attempt to spawn a power-up at the given coordinates
+        private void TrySpawnPowerUp(int x, int y)
+        {
+            // 1. Set a chance (e.g., 0.15 = 15% chance)
+            double dropChance = 0.15;
+
+            if (rand.NextDouble() < dropChance)
+            {
+                // 2. Pick a random type from your Enum
+                // This gets all values from your PowerUpType enum and picks one
+                var types = Enum.GetValues(typeof(PowerUpType));
+                PowerUpType randomType = (PowerUpType)types.GetValue(rand.Next(types.Length));
+
+                // 3. Create the powerup (centered on the brick)
+                // Note: Adjust width/height (20, 20) if your PowerUp class requires it
+                powerUps.Add(new PowerUp(x, y, randomType));
+            }
+        }
+
+        // --Update and remove expired score popups
+        private void UpdatePopups()
+        {
+            for (int i = scorePopups.Count - 1; i >= 0; i--)
+            {
+                scorePopups[i].Update();
+                if (!scorePopups[i].IsAlive) scorePopups.RemoveAt(i);
+            }
+        }
+
+        // --Check if all bricks are destroyed to progress to next level
+        private void CheckLevelProgression()
+        {
+            if (bricks.All(b => !b.IsVisible))
+            {
+                currentLevel = (currentLevel >= 3) ? 1 : currentLevel + 1;
+                StartLevel(currentLevel);
+            }
+        }
+        // --Update paddle effects like extender duration and blinking
+        private void UpdatePaddleEffects()
+        {
+            if (paddleExtenderTicksLeft > 0)
+            {
+                paddleExtenderTicksLeft--;
+
+                // Blinking logic when effect is running out
+                if (paddleExtenderTicksLeft < 62)
+                {
+                    isPaddleBlinking = true;
+                    paddleBlinkCounter++;
+                }
+
+                if (paddleExtenderTicksLeft == 0)
+                {
+                    currentPaddleWidth = originalPaddleWidth;
+                    isPaddleBlinking = false;
+                }
+            }
+        }
+
+        // --Update visual effects like border color cycling
+        private void UpdateVisualEffects()
+        {
+            borderHue = (borderHue + 1.5f) % 360f;
+        }
+        #endregion
+
+        #region Logic: Drawing Helpers
+
+        // --Draw the main play area with dynamic border color
+        private void DrawPlayArea(Graphics g)
+        {
+            Color borderColor = ColorFromHSV(borderHue, 1.0f, 1.0f);
+            using (Pen borderPen = new Pen(borderColor, 12))
+            {
+                g.DrawRectangle(borderPen, playAreaRect);
+            }
+            using (Brush bgBrush = new SolidBrush(Color.FromArgb(22, 22, 40)))
+            {
+                g.FillRectangle(bgBrush, playAreaRect);
+            }
+        }
+
+        // --Draw all visible bricks
+        private void DrawBricks(Graphics g)
+        {
+            // Optimization: Reuse the pen
+            using (Pen outlinePen = new Pen(Color.Black, 2))
+            {
+                foreach (var brick in bricks.Where(b => b.IsVisible))
+                {
+                    Rectangle r = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
+                    using (SolidBrush bBrush = new SolidBrush(brick.BrickColor))
+                    {
+                        g.FillRectangle(bBrush, r);
+                    }
+                    g.DrawRectangle(outlinePen, r);
+                }
+            }
+        }
+
+        // --Draw the paddle with potential blinking effect
+        private void DrawPaddle(Graphics g)
+        {
+            Rectangle r = new Rectangle((int)paddleX, paddleY, currentPaddleWidth, 20);
+            Color c = (isPaddleBlinking && (paddleBlinkCounter / 8) % 2 == 0) ? colorPaddleBlink : colorPaddleNormal;
+
+            using (var b = new SolidBrush(c))
+            using (var p = new Pen(Color.Blue, 2))
+            {
+                g.FillRectangle(b, r);
+                g.DrawRectangle(p, r);
+            }
+        }
+
+        // --Draw all balls
+        private void DrawBalls(Graphics g)
+        {
+            using (Brush b = new SolidBrush(Color.Red))
+            using (Pen p = new Pen(Color.White, 2))
+            {
+                foreach (var ball in balls)
+                {
+                    Rectangle r = new Rectangle(ball.X, ball.Y, ball.Radius * 2, ball.Radius * 2);
+                    g.FillEllipse(b, r);
+                    g.DrawEllipse(p, r);
+                }
+            }
+        }
+
+        // --Draw Heads-Up Display (Score, Time, Level)
+        private void DrawHUD(Graphics g)
+        {
+            int hudY = playAreaRect.Top - HudHeightOffset;
+
+            // Title
+            string title = "BrickBreaker";
+            float titleX = playAreaRect.Left + (playAreaRect.Width - g.MeasureString(title, fontScore).Width) / 2;
+            g.DrawString(title, fontScore, Brushes.White, titleX, playAreaRect.Top - 100);
+
+            // Stats
+            string timeStr = $"{(int)elapsedSeconds / 60:D2}:{(int)elapsedSeconds % 60:D2}";
+            DrawStatBox(g, $"Score: {score}", fontScore, playAreaRect.Left, hudY);
+            DrawStatBox(g, timeStr, fontTime, playAreaRect.Right - 150, hudY); // Adjusted X for alignment
+
+            // Level
+            string lvlStr = $"Level {currentLevel}";
+            Font safeFont = fontCurrentLevel ?? SystemFonts.DefaultFont;
+            g.DrawString(lvlStr, safeFont, Brushes.Black, playAreaRect.Left + 252, hudY + 8); // Shadow
+            g.DrawString(lvlStr, safeFont, Brushes.White, playAreaRect.Left + 250, hudY + 6);
+        }
+
+        // --Draw a stat box with background and border
+        private void DrawStatBox(Graphics g, string text, Font font, int x, int y)
+        {
+            SizeF size = g.MeasureString(text, font);
+            int padding = 10;
+            Rectangle box = new Rectangle(x, y, (int)size.Width + padding * 2, (int)size.Height + padding * 2);
+
+            using (Brush bg = new SolidBrush(Color.FromArgb(0, 0, 20)))
+            using (Pen border = new Pen(Color.LightGray, 2))
+            {
+                g.FillRectangle(bg, box);
+                g.DrawRectangle(border, box);
+            }
+            g.DrawString(text, font, Brushes.White, x + padding, y + padding);
+        }
+
+        // --Draw overlays like Game Over screen or launch instructions
+        private void DrawOverlays(Graphics g)
+        {
+            if (isGameOver)
+            {
+                using (SolidBrush dim = new SolidBrush(Color.FromArgb(150, 0, 0, 0)))
+                    g.FillRectangle(dim, ClientRectangle);
+
+                string txt = "Game Over! Press SPACE to restart";
+                SizeF sz = g.MeasureString(txt, fontGameOver);
+                g.DrawString(txt, fontGameOver, Brushes.Red,
+                    (ClientSize.Width - sz.Width) / 2,
+                    (ClientSize.Height - sz.Height) / 2);
             }
             else if (ballReadyToShoot && !isPaused)
             {
-                string launchText = "Press UP ARROW to launch the ball";
-                SizeF textSize = g.MeasureString(launchText, fontLaunch);
-                float x = (ClientSize.Width - textSize.Width) / 2;
-                float y = paddleY - 80;
-                g.DrawString(launchText, fontLaunch, Brushes.White, x, y);
+                string txt = "Press UP ARROW to launch";
+                SizeF sz = g.MeasureString(txt, fontLaunch);
+                g.DrawString(txt, fontLaunch, Brushes.White,
+                    (ClientSize.Width - sz.Width) / 2,
+                    paddleY - 80);
             }
         }
 
-        // Helper method to draw text inside a styled box
-        private void DrawStatBox(Graphics g, string text, Font font, Brush textBrush, int x, int y)
-        {
-            // Measure how big the text is
-            SizeF textSize = g.MeasureString(text, font);
+        #endregion
 
-            // Define Padding (space between text and border)
-            int padding = 10;
+        #region Logic: Game Management (Start, Restart, Resize)
 
-            // Create the rectangle for the box
-            Rectangle boxRect = new Rectangle(x, y, (int)textSize.Width + (padding * 2), (int)textSize.Height + (padding * 2));
-
-            // Draw the Box Background 
-            using (Brush boxBg = new SolidBrush(Color.FromArgb(0, 0, 20)))
-            {
-                g.FillRectangle(boxBg, boxRect);
-            }
-
-            // Draw the Box Border (White/Light Gray)
-            using (Pen boxPen = new Pen(Color.LightGray, 2))
-            {
-                g.DrawRectangle(boxPen, boxRect);
-            }
-
-            // Draw the Text inside the box
-            g.DrawString(text, font, textBrush, x + padding, y + padding);
-        }
-
-        // TODO: Implement so medium difficulty has some moving bricks, and hard has some indestructible ones, or more hits aswell, and moving bricks
-
-        // Initializes and starts a level with a specified difficulty
+        // --Start a new level with specified brick count
         private void StartLevel(int level)
         {
             currentLevel = level;
@@ -300,623 +502,266 @@ namespace BrickBreaker
             powerUps.Clear();
             scorePopups.Clear();
 
-            // Determine difficulty (Brick Count)
-            int bricksToSpawn = 0;
-            switch (currentLevel)
+            int bricksToSpawn = level switch
             {
-                case 1: bricksToSpawn = 15; break; // Easy
-                case 2: bricksToSpawn = 35; break; // Medium
-                case 3: bricksToSpawn = 60; break; // Hard
-                default: bricksToSpawn = 15; break; // Fallback to easy
-            }
+                1 => 15, // Sparse layout
+                2 => 35, // Moderate density
+                3 => 60, // Full grid                                           ///TODO: ADD MORE LEVELS LATER
+                _ => 15 // Fallback
+            };
 
+            SpawnBricks(bricksToSpawn);
+            ResetBallAndPaddle();
+        }
 
-            // list of points so we never pick the same spot twice (no overlapping)
-            List<Point> availableSlots = new List<Point>();
-            for (int row = 0; row < BrickRows; row++)
+        // --Spawn a specified number of bricks at random positions
+        private void SpawnBricks(int count)
+        {
+            // Create list of all possible coordinates
+            var slots = new List<Point>();
+            for (int r = 0; r < InitialBrickRows; r++)
+                for (int c = 0; c < InitialBrickCols; c++)
+                    slots.Add(new Point(c, r));
+
+            // Calculate board offset based on current layout
+            int startX = playAreaRect.Left + PlayAreaMargin;
+            int startY = playAreaRect.Top + PlayAreaMargin;
+
+            for (int i = 0; i < count && slots.Count > 0; i++)
             {
-                for (int col = 0; col < BrickCols; col++)
-                {
-                    availableSlots.Add(new Point(col, row));
-                }
-            }
+                int idx = rand.Next(slots.Count);
+                Point slot = slots[idx];
 
-            // Randomly pick slots from the list until we reach the count
-            for (int i = 0; i < bricksToSpawn; i++)
-            {
-                if (availableSlots.Count == 0) break; // Safety check
-
-                // Pick a random index from available slots
-                int index = rand.Next(availableSlots.Count);
-                Point slot = availableSlots[index];
-
-                // Create the brick at that slot
                 bricks.Add(new Brick
                 {
-                    X = BrickStartX + slot.X * BrickXSpacing,
-                    Y = BrickStartY + slot.Y * BrickYSpacing,
+                    X = startX + slot.X * BrickXSpacing,
+                    Y = startY + slot.Y * BrickYSpacing,
                     Width = BrickWidth,
                     Height = BrickHeight,
                     IsVisible = true,
                     BrickColor = Color.FromArgb(rand.Next(50, 255), rand.Next(50, 255), rand.Next(50, 255))
                 });
 
-                // Remove this slot so we dont pick it again
-                availableSlots.RemoveAt(index);
+                slots.RemoveAt(idx);
             }
-
-            //Reset Player Position
-            ResetBallAndPaddle();
         }
 
-        // Helper to reset ball/paddle (Moved out so we can reuse it)
+        // --Reset ball and paddle to starting positions
         private void ResetBallAndPaddle()
         {
-            PaddleWidth = originalPaddleWidth;
-            paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
+            currentPaddleWidth = originalPaddleWidth;
+            paddleX = playAreaRect.Left + (playAreaRect.Width - currentPaddleWidth) / 2.0;
 
             balls.Clear();
             balls.Add(new Ball(
-                x: (int)(paddleX + PaddleWidth / 2 - BallRadius),
+                x: (int)(paddleX + currentPaddleWidth / 2 - BallRadius),
                 y: paddleY - 50,
-                vx: 0, vy: 0, // Stopped
+                vx: 0, vy: 0,
                 radius: BallRadius
             ));
             ballReadyToShoot = true;
         }
 
-        // Activates the effect of a collected power-up based on type
+        // --Activate the effect of a collected power-up
         private void ActivatePowerUp(PowerUpType type)
         {
-            switch (type)
+            if (type == PowerUpType.Multiball && balls.Count > 0)
             {
-                case PowerUpType.Multiball:
-                    if (balls.Count > 0)
-                    {
-                        Ball mainBall = balls[0];
-                        // Add two extra balls with slightly different velocities for multiball effect
-                        balls.Add(new Ball(mainBall.X, mainBall.Y, 6, -6, mainBall.Radius));
-                        balls.Add(new Ball(mainBall.X, mainBall.Y, -6, -6, mainBall.Radius));
-                    }
-                    break;
-                case PowerUpType.PaddleExtender:
-                    PaddleWidth += 50; // Increase paddle width
-                    paddleExtenderTicksLeft = 300; // Lasts for 300 ticks (~5 seconds)
-                    isPaddleBlinking = false;
-                    break;
+                var main = balls[0];
+                balls.Add(new Ball(main.X, main.Y, 6, -6, main.Radius));
+                balls.Add(new Ball(main.X, main.Y, -6, -6, main.Radius));
+            }
+            else if (type == PowerUpType.PaddleExtender)
+            {
+                currentPaddleWidth += 50;
+                paddleExtenderTicksLeft = 300;
+                isPaddleBlinking = false;
             }
         }
 
-        // Helper method to draw all bricks in the game
-        private void DrawBricks(Graphics g)
+        // --Handle game over state
+        private void TriggerGameOver()
         {
-            foreach (var brick in bricks)
+            if (isGameOver) return;
+            isGameOver = true;
+            gameTimer?.Stop();
+
+            if (!gameFinishedRaised)
             {
-                if (brick.IsVisible)
-                {
-                    // We still need a new Brush because colors change per brick
-                    Rectangle r = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
-                    using (SolidBrush bBrush = new SolidBrush(brick.BrickColor))
-                    {
-                        g.FillRectangle(bBrush, r);
-                    }
-                    using (Pen outlinePen = new Pen(Color.Black, 2))
-                    {
-                        // This draws the border on TOP of the filled color
-                        g.DrawRectangle(outlinePen, r);
-                    }
-                }
+                gameFinishedRaised = true;
+                GameFinished?.Invoke(this, score);
             }
-        }
-
-        // Draw the paddle graphics at current position
-        private void DrawPaddle(Graphics g)
-        {
-            Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight); // Paddle rectangle
-
-            Color drawColor = normalPaddleColor; // Default paddle color
-            if (isPaddleBlinking && (paddleBlinkCounter / 8) % 2 == 0) // Blink every 8 ticks
-                drawColor = blinkPaddleColor; // Alternate color for blinking effect
-
-            using (var paddleBrush = new SolidBrush(drawColor)) // Create brush with determined color
-            using (var paddlePen = new Pen(Color.Blue, 2)) // Pen for paddle border
-            {
-                g.FillRectangle(paddleBrush, paddleRect); // Draw filled paddle
-                g.DrawRectangle(paddlePen, paddleRect); // Draw paddle border
-            }
-        }
-
-
-        // Draw all balls currently in play
-        private void DrawBalls(Graphics g)
-        {
-            foreach (var ball in balls)
-            {
-                Rectangle ballRect = new Rectangle(ball.X, ball.Y, ball.Radius * 2, ball.Radius * 2);
-                using (Brush ballBrush = new SolidBrush(Color.Red))
-                using (Pen ballPen = new Pen(Color.White, 2))
-                {
-                    g.FillEllipse(ballBrush, ballRect);  // Draw filled circle
-                    g.DrawEllipse(ballPen, ballRect);    // Draw border ellipse
-                }
-            }
-        }
-
-        // Main game logic executed on each timer tick (~60 times per second)
-        private void GameTimer_Tick(object sender, EventArgs e)
-        {
-            // --- NEW: Animate Border Color ---
-            borderHue += 1.5f; // Adjust this number to change speed (higher = faster)
-            if (borderHue >= 360f) borderHue -= 360f;
-
-            if (!isGameOver && !isPaused)
-            {
-                // Only increase the timer variables IF the ball has been shot
-                if (!ballReadyToShoot)
-                {
-                    elapsedSeconds += gameTimer.Interval / 1000.0;
-                    timeSinceColorChange += gameTimer.Interval / 1000.0;
-                }
-            }
-            else
-            {
-                // If game over or paused, we typically don't want to run physics
-                if (isPaused) Invalidate();
-                return;
-            }
-
-            // --- 1. UPDATE SCORE POPUPS ---
-            for (int i = scorePopups.Count - 1; i >= 0; i--)
-            {
-                scorePopups[i].Update();
-                if (!scorePopups[i].IsAlive)
-                {
-                    scorePopups.RemoveAt(i);
-                }
-            }
-
-            // --- 2. HANDLE BRICK COLORS ---
-            if (timeSinceColorChange >= colorChangeInterval)
-            {
-                foreach (var brick in bricks)
-                {
-                    if (brick.IsVisible)
-                        brick.BrickColor = Color.FromArgb(rand.Next(256), rand.Next(256), rand.Next(256));
-                }
-                timeSinceColorChange = 0;
-            }
-
-            // --- 3. MOVE PADDLE ---
-            if (leftPressed && paddleX > playAreaRect.Left)
-                paddleX -= PaddleSpeed;
-            if (rightPressed && paddleX < playAreaRect.Right - PaddleWidth)
-                paddleX += PaddleSpeed;
-
-
-            // --- 4. UPDATE POWERUPS (Optimized Reverse Loop) ---
-            for (int i = powerUps.Count - 1; i >= 0; i--)
-            {
-                var powerUp = powerUps[i];
-                powerUp.UpdatePosition();
-
-                // Remove if off screen
-                if (powerUp.Y > playAreaRect.Bottom)
-                {
-                    powerUps.RemoveAt(i);
-                    continue;
-                }
-
-                // Check collision
-                Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight);
-                Rectangle powerUpRect = new Rectangle(powerUp.X, powerUp.Y, powerUp.Width, powerUp.Height);
-
-                if (paddleRect.IntersectsWith(powerUpRect))
-                {
-                    ActivatePowerUp(powerUp.Type);
-                    powerUps.RemoveAt(i);
-                }
-            }
-
-            // --- 5. UPDATE BALLS (Optimized Reverse Loop) ---
-            // We use a for-loop here so we can remove balls safely without .ToList()
-            for (int i = balls.Count - 1; i >= 0; i--)
-            {
-                var ball = balls[i];
-
-                if (ballReadyToShoot)
-                {
-                    ball.X = (int)(paddleX + PaddleWidth / 2 - BallRadius);
-                    ball.Y = paddleY - 50;
-                }
-                else
-                {
-                    ball.UpdatePosition();
-                }
-
-                // Ball Death
-                if (ball.Y + ball.Radius * 2 > playAreaRect.Bottom)
-                {
-                    balls.RemoveAt(i);
-                    if (balls.Count == 0)
-                    {
-                        TriggerGameOver();
-                        return; // Exit immediately on game over
-                    }
-                    continue;
-                }
-
-                // Brick Collisions
-                bool hitBrick = false;
-                foreach (var brick in bricks)
-                {
-                    if (brick.IsVisible && BallHitsRect(ball, brick))
-                    {
-                        brick.IsVisible = false;
-                        ball.InvertVerticalVelocity();
-                        brickStreak++;
-                        scoreMultiplier = Math.Max(1, brickStreak);
-                        score += 10 * scoreMultiplier;
-
-                        // Add visual flare
-                        scorePopups.Add(new ScorePopup(brick.X + brick.Width / 2, brick.Y + brick.Height / 2, 10 * scoreMultiplier));
-
-                        // Chance for PowerUp
-                        if (rand.NextDouble() < 0.2)
-                        {
-                            var powerUpType = (PowerUpType)(rand.Next(0, 2));
-                            powerUps.Add(new PowerUp(brick.X + brick.Width / 2, brick.Y + brick.Height / 2, powerUpType));
-                        }
-                        hitBrick = true;
-                        break;
-                    }
-                }
-
-                // Wall Collisions (Only check if we didn't just hit a brick to prevent sticking)
-                if (!hitBrick)
-                {
-                    if (ball.X <= playAreaRect.Left)
-                    {
-                        ball.InvertHorizontalVelocity();
-                        ball.SetPosition(playAreaRect.Left, ball.Y);
-                        brickStreak = 0; scoreMultiplier = 1;
-                    }
-                    if (ball.X + ball.Radius * 2 >= playAreaRect.Right)
-                    {
-                        ball.InvertHorizontalVelocity();
-                        ball.SetPosition(playAreaRect.Right - ball.Radius * 2, ball.Y);
-                        brickStreak = 0; scoreMultiplier = 1;
-                    }
-                    if (ball.Y <= playAreaRect.Top)
-                    {
-                        ball.InvertVerticalVelocity();
-                        ball.SetPosition(ball.X, playAreaRect.Top);
-                        brickStreak = 0; scoreMultiplier = 1;
-                    }
-                }
-
-                // Paddle Collision
-                if (BallHitsRect(ball, new Rectangle((int)paddleX, paddleY, PaddleWidth, PaddleHeight)))
-                { 
-                    double ballCenter = ball.X + ball.Radius; // Ball center X
-                    double paddleCenter = paddleX + PaddleWidth / 2.0; // Paddle center X
-                    double hitPos = (ballCenter - paddleCenter) / (PaddleWidth / 2.0); // -1 (left) to +1 (right)
-
-                    // Physics math
-                    double BallSpeed = 9.0; // (Increased slightly for better feel)
-                    double maxHorizontal = BallSpeed * 0.75; // Max horizontal speed component
-
-                    double vx = hitPos * maxHorizontal; // New Horizontal Speed based on hit position
-
-                    // --- NEW: PREVENT VERTICAL LOCK ---
-                    // If the ball hits dead center, VX becomes 0. We must prevent that.
-                    double minHorizontal = 2.0; // Minimum horizontal speed allowed
-
-                    if (Math.Abs(vx) < minHorizontal) // Too vertical
-                    {
-                        // If its too vertical, change it to the minimum speed.
-                        // keep the sign left/right based on where it hit.
-                        if (vx < 0) vx = -minHorizontal;
-                        else vx = minHorizontal;
-                    }
-                    // ----------------------------------
-
-                    // Recalculate Vertical Speed (VY) based on the new VX
-                    // This ensures the ball always moves at the same total speed
-                    double vy = -Math.Sqrt(BallSpeed * BallSpeed - vx * vx);
-
-                    ball.VX = vx; 
-                    ball.VY = vy; 
-
-                    brickStreak = 0; // Reset streak
-                    scoreMultiplier = 1; // Reset multiplier
-                }
-            }
-
-            // --- 6. UPDATE PADDLE EFFECTS ---
-            if (paddleExtenderTicksLeft > 0)
-            {
-                paddleExtenderTicksLeft--;
-
-                // Handle Blinking
-                if (paddleExtenderTicksLeft < 62)
-                {
-                    isPaddleBlinking = true;
-                    paddleBlinkCounter++;
-                }
-                else
-                {
-                    isPaddleBlinking = false;
-                    paddleBlinkCounter = 0;
-                }
-
-                // Handle Expiration
-                if (paddleExtenderTicksLeft == 0)
-                {
-                    PaddleWidth = originalPaddleWidth;
-                    isPaddleBlinking = false;
-                    paddleBlinkCounter = 0;
-                }
-            }
-            bool allBricksDestroyed = true;
-            foreach (var b in bricks)
-            {
-                if (b.IsVisible)
-                {
-                    allBricksDestroyed = false;
-                    break;
-                }
-            }
-
-            if (allBricksDestroyed)
-            {
-                currentLevel++;
-                if (currentLevel > 3) currentLevel = 1;
-                StartLevel(currentLevel);
-                Invalidate();
-                return;
-            }
-
-            // Redraw screen
             Invalidate();
         }
 
-        // Helper method to check if a ball intersects a rectangle (overlap test)
-        private bool BallHitsRect(Ball ball, Rectangle rect)
+        // --Restart the game from level 1
+        private void RestartGame()
         {
-            if (ball == null) return false; // Safety check in case ball is null
-            return
-                ball.X + ball.Radius * 2 >= rect.X &&
-                ball.X <= rect.X + rect.Width &&
-                ball.Y + ball.Radius * 2 >= rect.Y &&
-                ball.Y <= rect.Y + rect.Height;
+            score = 0;
+            elapsedSeconds = 0;
+            isGameOver = false;
+            gameFinishedRaised = false;
+            ballReadyToShoot = true;
+
+            StartLevel(1);
+            gameTimer.Start();
+            Invalidate();
         }
 
-        // Overload for Ball and Brick collision check by converting brick to rectangle
-        private bool BallHitsRect(Ball ball, Brick b)
+        // --Setup or adjust game layout on window resize
+        private void SetupGameLayout()
         {
-            return BallHitsRect(
-                ball,
-                new Rectangle(b.X, b.Y, b.Width, b.Height)
-            );
-        }
-        private void SetupGameLayout() // NEW METHOD TO HANDLE RESIZING AND CENTERING
-        {
-            // 1. Remember where the game board WAS before resizing
-            int oldStartX = BrickStartX;
-            int oldStartY = BrickStartY;
+            // Calculate game board dimensions
+            int boardW = (InitialBrickCols - 1) * BrickXSpacing + BrickWidth;
+            int boardH = (InitialBrickRows - 1) * BrickYSpacing + BrickHeight + PaddleAreaHeight;
 
-            // 2. Get new Window Size
-            WindowWidth = this.ClientSize.Width;
-            WindowHeight = this.ClientSize.Height;
+            // Center in window
+            int startX = (ClientSize.Width - boardW) / 2;
+            int startY = (ClientSize.Height - boardH) / 2;
 
-            // 3. Calculate the total game size (Standard Math)
-            int totalGameWidth = (BrickCols - 1) * BrickXSpacing + BrickWidth;
-            int totalGameHeight = (BrickRows - 1) * BrickYSpacing + BrickHeight + PaddleAreaHeight;
-
-            // 4. Calculate NEW Start Positions (Centering)
-            BrickStartX = (WindowWidth - totalGameWidth) / 2;
-            BrickStartY = (WindowHeight - totalGameHeight) / 2;
-
-            // 5. Define the new Play Area Rectangle
-            playAreaRect = new Rectangle(
-                BrickStartX - PlayAreaMargin,
-                BrickStartY - PlayAreaMargin,
-                totalGameWidth + PlayAreaMargin * 2,
-                totalGameHeight + PlayAreaMargin
+            Rectangle newRect = new Rectangle(
+                startX - PlayAreaMargin,
+                startY - PlayAreaMargin,
+                boardW + PlayAreaMargin * 2,
+                boardH + PlayAreaMargin
             );
 
-            // --- THE FIX: REPOSITION OBJECTS ---
-
-            // Calculate how far the board moved (Delta)
-            int dx = BrickStartX - oldStartX;
-            int dy = BrickStartY - oldStartY;
-
-            // Only move things if the game has actually started (bricks exist)
-            // and if this isn't the very first setup (oldStartX won't be 0 if initialized)
-            if (bricks.Count > 0 && oldStartX != 0)
+            // Move entities if resizing
+            if (bricks.Count > 0 && playAreaRect.Width > 0)
             {
-                // Shift Bricks
-                foreach (var brick in bricks)
-                {
-                    brick.X += dx;
-                    brick.Y += dy;
-                }
+                int dx = newRect.X - playAreaRect.X;
+                int dy = newRect.Y - playAreaRect.Y;
 
-                // Shift Balls
-                foreach (var ball in balls)
-                {
-                    ball.X += dx;
-                    ball.Y += dy;
-                }
-
-                // Shift Powerups
-                foreach (var p in powerUps)
-                {
-                    p.X += dx;
-                    p.Y += dy;
-                }
-
-                // Shift Paddle X (horizontal move)
+                foreach (var b in bricks) { b.X += dx; b.Y += dy; }
+                foreach (var b in balls) { b.X += dx; b.Y += dy; }
+                foreach (var p in powerUps) { p.X += dx; p.Y += dy; }
                 paddleX += dx;
             }
             else
             {
-                // If this is the very first start (Constructor), just center paddle
-                paddleX = playAreaRect.Left + (playAreaRect.Width - PaddleWidth) / 2.0;
+                // Initial Setup
+                paddleX = newRect.Left + (newRect.Width - currentPaddleWidth) / 2.0;
             }
 
-            // Always force Paddle Y to the bottom of the new rectangle
-            int paddleBottomMargin = 10;
-            paddleY = playAreaRect.Bottom - PaddleHeight - paddleBottomMargin;
+            playAreaRect = newRect;
+            paddleY = playAreaRect.Bottom - 20 - PaddleBottomMargin;
 
-            // Safety check to keep paddle inside bounds
+            // Clamp Paddle
             if (paddleX < playAreaRect.Left) paddleX = playAreaRect.Left;
-            if (paddleX > playAreaRect.Right - PaddleWidth) paddleX = playAreaRect.Right - PaddleWidth;
+            if (paddleX > playAreaRect.Right - currentPaddleWidth) paddleX = playAreaRect.Right - currentPaddleWidth;
         }
+
+        // --Toggle between fullscreen and windowed mode
         private void ToggleFullscreen()
         {
-            if (this.WindowState == FormWindowState.Maximized)
+            if (WindowState == FormWindowState.Maximized)
             {
-                // SWITCH TO WINDOWED MODE
-                this.FormBorderStyle = FormBorderStyle.FixedSingle;
-                this.WindowState = FormWindowState.Normal;
-                this.Size = new Size(1000, 900); // Set a default window size
-                this.CenterToScreen();
+                FormBorderStyle = FormBorderStyle.FixedSingle;
+                WindowState = FormWindowState.Normal;
+                Size = new Size(1000, 900);
+                CenterToScreen();
             }
             else
             {
-                // SWITCH TO FULLSCREEN
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.WindowState = FormWindowState.Maximized;
-                this.Bounds = Screen.PrimaryScreen.Bounds;
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
+                Bounds = Screen.PrimaryScreen.Bounds;
             }
-
-            // CRITICAL: Recalculate the center of the screen
             SetupGameLayout();
-
-            // Force a redraw so the black background fills the new size
             Invalidate();
         }
+        #endregion
 
-        // Keyboard handler for key press events
+        #region Input Handling
+
+        // --Handle key presses for game control
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            // Exit Game
-            if (e.KeyCode == Keys.Escape)
-            {
-                Application.Exit();
-            }
+            if (e.KeyCode == Keys.Escape) Application.Exit();
+            if (e.KeyCode == Keys.F) ToggleFullscreen();
+            if (e.KeyCode == Keys.P) { isPaused = !isPaused; Invalidate(); }
 
-            // Toggle Fullscreen
-            if (e.KeyCode == Keys.F) // You used F in your snippet, so I kept F here
-            {
-                ToggleFullscreen();
-            }
+            if (isGameOver && e.KeyCode == Keys.Space) RestartGame();
 
-            // --- MOVEMENT (Arrows OR WASD) ---
-            // We ONLY set them to TRUE here. Do not set them to false here!
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.A) leftPressed = true;
             if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D) rightPressed = true;
 
-            // Restart Game
-            if (isGameOver && e.KeyCode == Keys.Space)
-            {
-                RestartGame();
-                ballReadyToShoot = true;
-            }
-
-            // Pause
-            if (e.KeyCode == Keys.P)
-            {
-                isPaused = !isPaused;
-                Invalidate();
-            }
-
-            // Shoot Ball (Arrow Up OR W)
             if ((e.KeyCode == Keys.Up || e.KeyCode == Keys.W) && ballReadyToShoot)
             {
-                var mainBall = balls.FirstOrDefault();
-                if (mainBall != null)
-                {
-                    mainBall.VX = 0;
-                    mainBall.VY = -7;
-                    ballReadyToShoot = false;
-                }
+                var b = balls.FirstOrDefault();
+                if (b != null) { b.VX = 0; b.VY = -7; }
+                ballReadyToShoot = false;
             }
         }
-        
 
-        // Keyboard handler for key release events
+        // --Handle key releases for paddle movement
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
-            // When the key is RELEASED, we stop moving
-            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.A)
-                leftPressed = false;
-
-            if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D)
-                rightPressed = false;
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.A) leftPressed = false;
+            if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D) rightPressed = false;
         }
 
-        private void TriggerGameOver()
+        #endregion
+
+        #region Utilities (Fonts, Physics, Colors)
+
+        // --Load custom fonts or fallback to system fonts
+        private void LoadFonts()
         {
-            if (isGameOver)
+            string path = Path.Combine(Application.StartupPath, "PressStart2P-Regular.ttf");
+            if (File.Exists(path))
             {
-                return;
+                fontCollection.AddFontFile(path);
+                FontFamily family = fontCollection.Families[0];
+                fontScore = new Font(family, 12, FontStyle.Regular);
+                fontMultiplier = new Font(family, 12, FontStyle.Regular);
+                fontCurrentLevel = new Font(family, 12, FontStyle.Regular);
+                fontTime = new Font(family, 12, FontStyle.Regular);
+                fontLaunch = new Font(family, 10, FontStyle.Regular);
+                fontGameOver = new Font(family, 24, FontStyle.Bold);
             }
-
-            isGameOver = true;
-            gameTimer?.Stop();
-            RaiseGameFinished();
-            Invalidate();
-        }
-        private void RestartGame()
-        {
-            // 1. Reset Game State
-            score = 0;
-            brickStreak = 0;
-            scoreMultiplier = 1;
-            elapsedSeconds = 0;
-            isGameOver = false;
-            gameFinishedRaised = false;
-            gameTimer.Start(); 
-            ballReadyToShoot = true;
-            StartLevel(1);
-
-            Invalidate();
-        }
-
-        private void RaiseGameFinished()
-        {
-            if (gameFinishedRaised)
+            else
             {
-                return;
+                // Fallbacks
+                fontScore = new Font("Consolas", 18, FontStyle.Bold);
+                fontMultiplier = new Font("Consolas", 18, FontStyle.Bold);
+                fontCurrentLevel = new Font("Arial", 12, FontStyle.Bold);
+                fontTime = new Font("Consolas", 18, FontStyle.Bold);
+                fontLaunch = new Font("Arial", 16, FontStyle.Bold);
+                fontGameOver = new Font("Arial", 20, FontStyle.Bold);
             }
-
-            gameFinishedRaised = true;
-            GameFinished?.Invoke(this, score);
-
         }
 
-        // Converts HSV color values to a Color object
-        private Color ColorFromHSV(float hue, float saturation, float value) 
+        // --Check if a ball intersects with a rectangle (brick or paddle)
+        private bool BallHitsRect(Ball ball, Rectangle rect)
         {
-            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6; // Which sector of the color wheel
+            return ball.X + ball.Radius * 2 >= rect.X &&
+                   ball.X <= rect.X + rect.Width &&
+                   ball.Y + ball.Radius * 2 >= rect.Y &&
+                   ball.Y <= rect.Y + rect.Height;
+        }
 
-            double f = hue / 60.0 - Math.Floor(hue / 60.0); // Fractional part of hue sector
-
-            value = value * 255; // Scale value to 0-255 range
-            int v = Convert.ToInt32(value); // Brightness
-            int p = Convert.ToInt32(value * (1 - saturation)); // Value with no saturation
-
+        // --Convert HSV color to RGB Color
+        private Color ColorFromHSV(float hue, float saturation, float value)
+        {
+            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
+            double f = hue / 60.0 - Math.Floor(hue / 60.0);
+            value = value * 255;
+            int v = Convert.ToInt32(value);
+            int p = Convert.ToInt32(value * (1 - saturation));
             int q = Convert.ToInt32(value * (1 - f * saturation));
             int t = Convert.ToInt32(value * (1 - (1 - f) * saturation));
 
-            if (hi == 0) return Color.FromArgb(255, v, t, p);
-            else if (hi == 1) return Color.FromArgb(255, q, v, p);
-            else if (hi == 2) return Color.FromArgb(255, p, v, t);
-            else if (hi == 3) return Color.FromArgb(255, p, q, v);
-            else if (hi == 4) return Color.FromArgb(255, t, p, v);
-            else return Color.FromArgb(255, v, p, q);
+            return hi switch
+            {
+                0 => Color.FromArgb(255, v, t, p),
+                1 => Color.FromArgb(255, q, v, p),
+                2 => Color.FromArgb(255, p, v, t),
+                3 => Color.FromArgb(255, p, q, v),
+                4 => Color.FromArgb(255, t, p, v),
+                _ => Color.FromArgb(255, v, p, q)
+            };
         }
+        #endregion
     }
 }
