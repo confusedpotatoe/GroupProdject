@@ -135,7 +135,7 @@ class Program
     static AppState HandlePlaying()
     {
         AnsiConsole.Clear();
-        IGame game = new BrickBreaker.WinFormsBrickBreakerGame();
+        IGame game = new BrickBreaker.Hosting.WinFormsBrickBreakerGame();
         int score = game.Run();
 
         int lowerLine = Console.WindowHeight - 4;

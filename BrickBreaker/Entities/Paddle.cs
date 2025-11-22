@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BrickBreaker
+namespace BrickBreaker.Entities
 {
     public class Paddle
     {
