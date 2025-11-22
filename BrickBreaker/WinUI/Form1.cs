@@ -21,6 +21,7 @@ namespace BrickBreaker
         [Browsable(false)]
         public bool CloseOnGameOver { get; set; }
 
+        // FIX: Read the score from the gameEngine, not a local variable
         public int LatestScore => gameEngine != null ? gameEngine.Score : 0;
 
         // --- 2. UI State ---
@@ -101,7 +102,7 @@ namespace BrickBreaker
                 elapsedSeconds += deltaTime; // Update elapsed time
 
                 // Update Physics
-                gameEngine.Update(deltaTime, playAreaRect, paddleX, paddleY); 
+                gameEngine.Update(deltaTime, playAreaRect, paddleX, paddleY);
             }
 
             // 3. Handle "Ball Stuck to Paddle" Logic
@@ -200,7 +201,7 @@ namespace BrickBreaker
             int hudY = playAreaRect.Top - GameConstants.HudHeightOffset; // Y position for HUD
 
             // --- TITLE LOGIC ---
-            string title = "BRICK BREAKER"; 
+            string title = "BRICK BREAKER";
             SizeF titleSize = g.MeasureString(title, fontGameOver); // Measure title size
 
             float titleX = (ClientSize.Width - titleSize.Width) / 2;
@@ -216,7 +217,7 @@ namespace BrickBreaker
 
             // Stats
             string timeStr = $"{(int)elapsedSeconds / 60:D2}:{(int)elapsedSeconds % 60:D2}";
-            DrawStatBox(g, $"Score: {gameEngine.Score}", fontScore, playAreaRect.Left, hudY); 
+            DrawStatBox(g, $"Score: {gameEngine.Score}", fontScore, playAreaRect.Left, hudY);
             DrawStatBox(g, timeStr, fontTime, playAreaRect.Right - 110, hudY);
 
             // Level
@@ -285,7 +286,7 @@ namespace BrickBreaker
                 paddleX -= GameConstants.BasePaddleSpeed;
 
             if (rightPressed && paddleX < playAreaRect.Right - gameEngine.CurrentPaddleWidth) // Move right
-                paddleX += GameConstants.BasePaddleSpeed; 
+                paddleX += GameConstants.BasePaddleSpeed;
         }
 
         private void UpdateVisualEffects()
@@ -367,7 +368,7 @@ namespace BrickBreaker
             }
         }
 
-        private void TriggerGameOver() 
+        private void TriggerGameOver()
         {
             isGameOver = true;
             gameTimer.Stop(); // Stop the game loop
@@ -390,8 +391,8 @@ namespace BrickBreaker
                 FormBorderStyle = FormBorderStyle.FixedSingle; // Restore borders
                 WindowState = FormWindowState.Normal; // Restore windowed mode
                 Size = new Size(1000, 900); // Set to a reasonable size
-                CenterToScreen(); 
-            } 
+                CenterToScreen();
+            }
             else
             {
                 FormBorderStyle = FormBorderStyle.None;
