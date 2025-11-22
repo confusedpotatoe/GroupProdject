@@ -145,6 +145,7 @@ namespace BrickBreaker
                 FontFamily pixelFamily = pfc.Families[0];
 
                 // Adjust sizes (Pixel fonts usually need to be smaller than Arial to look good)
+                Font titleFont = new Font(pixelFamily, 18, FontStyle.Bold);
                 fontScore = new Font(pixelFamily, 12, FontStyle.Regular);
                 fontMultiplier = new Font(pixelFamily, 12, FontStyle.Regular);
                 fontcurrentLevel = new Font(pixelFamily, 12, FontStyle.Regular);
@@ -164,7 +165,7 @@ namespace BrickBreaker
             }
         }
 
-       
+
         // Paint event handler to render the game elements each frame
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
@@ -195,6 +196,12 @@ namespace BrickBreaker
             // 3. Draw HUD (Score, Multiplier, Time) IN BOXES
             int minutes = (int)elapsedSeconds / 60, seconds = (int)elapsedSeconds % 60;
             string timeStr = $"{minutes:D2}:{seconds:D2}";
+
+            string Titel = "BrickBreaker";
+            Brush titleBrush = Brushes.White;
+            e.Graphics.DrawString(Titel, fontScore, titleBrush, playAreaRect.Left + (playAreaRect.Width - e.Graphics.MeasureString(Titel, fontScore).Width) / 2, playAreaRect.Top - 100);
+
+
 
             // Calculate Y position for the HUD boxes (slightly above the play area)
             int hudY = playAreaRect.Top - 50;
