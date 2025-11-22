@@ -12,7 +12,7 @@ namespace BrickBreaker
     public partial class Form1 : Form
     {
         // --- 1. The Engine ---
-        private GameEngine gameEngine;
+        private GameEngine gameEngine = null!;
 
         public event EventHandler<int>? GameFinished;
 
@@ -21,7 +21,6 @@ namespace BrickBreaker
         [Browsable(false)]
         public bool CloseOnGameOver { get; set; }
 
-        // FIX: Read the score from the gameEngine, not a local variable
         public int LatestScore => gameEngine != null ? gameEngine.Score : 0;
 
         // --- 2. UI State ---
@@ -206,9 +205,7 @@ namespace BrickBreaker
             // 1. Center Horizontally
             float titleX = (ClientSize.Width - titleSize.Width) / 2;
 
-            // 2. Center Vertically (Safety Fix)
-            // We try to put it 100px above the board.
-            // But if that is off-screen (< 0), we clamp it to 10px from the top.
+            // 2. Center Vertically
             float titleY = playAreaRect.Top - 100;
             if (titleY < 0) titleY = 10;
 
@@ -298,7 +295,7 @@ namespace BrickBreaker
         }
 
         // --- Input Handling ---
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Escape) Application.Exit();
             if (e.KeyCode == Keys.F) ToggleFullscreen();
@@ -319,7 +316,7 @@ namespace BrickBreaker
             if (isGameOver && e.KeyCode == Keys.Space) RestartGame();
         }
 
-        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        private void Form1_KeyUp(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.A) leftPressed = false;
             if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D) rightPressed = false;
@@ -350,7 +347,7 @@ namespace BrickBreaker
             // 4. Apply the change to the Form's variables
             playAreaRect = newRect;
 
-            // 5. If the game was already running (oldRect isn't empty), shift the engine entities!
+            // 5. Calculate the difference and shift objects accordingly
             if (oldRect.Width > 0 && oldRect.Height > 0)
             {
                 int dx = newRect.X - oldRect.X;
