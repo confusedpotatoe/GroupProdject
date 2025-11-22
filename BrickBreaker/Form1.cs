@@ -203,7 +203,7 @@ namespace BrickBreaker
             DrawStatBox(g, $"Score: {score}", fontScore, Brushes.White, playAreaRect.Left, hudY);
 
             // Draw Multiplier Box
-            DrawStatBox(g, $" x{scoreMultiplier}", fontMultiplier, Brushes.White, playAreaRect.Left + 150, hudY);
+            DrawStatBox(g, $" x{scoreMultiplier}", fontMultiplier, Brushes.White, playAreaRect.Left + 200, hudY);
 
             // Draw Time Box (Aligned to the right side of play area)
             // We calculate width roughly to align it right, or just use your specific offset
@@ -261,7 +261,7 @@ namespace BrickBreaker
             SizeF textSize = g.MeasureString(text, font);
 
             // Define Padding (space between text and border)
-            int padding = 6;
+            int padding = 10;
 
             // Create the rectangle for the box
             Rectangle boxRect = new Rectangle(x, y, (int)textSize.Width + (padding * 2), (int)textSize.Height + (padding * 2));
