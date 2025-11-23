@@ -15,6 +15,7 @@ namespace BrickBreaker
         public List<ScorePopup> ScorePopups { get; private set; } = new List<ScorePopup>();
 
         public int Score { get; private set; }
+
         public int CurrentLevel { get; private set; } = 1;
 
         // --- Paddle State ---
@@ -26,6 +27,7 @@ namespace BrickBreaker
         // --- Events ---
         public event EventHandler GameOver;
         public event EventHandler<int> ScoreChanged;
+        public event EventHandler LevelLoaded;
 
         // --- Main Loop ---
         public void Update(double deltaTime, Rectangle playArea, double paddleX, int paddleY)
@@ -107,8 +109,8 @@ namespace BrickBreaker
 
         private void TrySpawnPowerUp(int x, int y)
         {
-            // 15% Chance to drop
-            if (rand.NextDouble() < 1.0)
+            // 20% Chance to drop
+            if (rand.NextDouble() < 0.2)
             {
                 // Pick random type
                 var types = Enum.GetValues(typeof(PowerUpType));
@@ -237,6 +239,7 @@ namespace BrickBreaker
 
             SpawnBricks(bricksToSpawn, playArea);
             ResetBall(playArea);
+            LevelLoaded?.Invoke(this, EventArgs.Empty);
         }
 
         private void SpawnBricks(int count, Rectangle playArea)

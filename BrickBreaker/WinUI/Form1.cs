@@ -56,6 +56,7 @@ namespace BrickBreaker
             // Listen for Events from Engine
             gameEngine.GameOver += (s, e) => TriggerGameOver();
             gameEngine.ScoreChanged += (s, newScore) => { /* Optional: Play Sound */ };
+            gameEngine.LevelLoaded += (s, e) => { ballReadyToShoot = true; };
 
             SetupGameLayout();
 
