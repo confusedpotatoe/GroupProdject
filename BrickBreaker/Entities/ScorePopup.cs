@@ -42,13 +42,13 @@ namespace BrickBreaker.Entities
             Y += dy;
         }
 
-        public bool IsAlive => _age < Lifetime;
+        public bool IsAlive => _age < Lifetime; // Slightly shorter lifetime
 
-        public void Draw(Graphics g)
+        public void Draw(Graphics g) // Adjusted drawing for visibility
         {
-            int alpha = 255;
-            if (_age > Lifetime - 10)
-                alpha = (int)(255 * ((float)(Lifetime - _age) / 10f));
+            int alpha = 255; // Full opacity
+            if (_age > Lifetime - 10) // Fade out in the last 10 frames
+                alpha = (int)(255 * ((float)(Lifetime - _age) / 10f)); // Faster fade out
 
             // Color for multiplier or score
             Color mainColor = CustomText != null ? Color.FromArgb(alpha, Color.OrangeRed) : Color.FromArgb(alpha, Color.Yellow);

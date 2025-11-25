@@ -90,7 +90,6 @@ namespace BrickBreaker
                     HandleScoring(ball, brick);
                     ScoreChanged?.Invoke(this, Score);
 
-                    // FIX: Do not activate powerup here. Just Try to SPAWN one.
                     TrySpawnPowerUp(brick.X + brick.Width / 2, brick.Y);
 
                     break;
@@ -134,11 +133,11 @@ namespace BrickBreaker
                 if (paddleRect.IntersectsWith(powerUpRect))
                 {
                     ActivatePowerUp(p.Type); // <--- This triggers the effect!
-                    PowerUps.RemoveAt(i);    // Remove from screen
+                    PowerUps.RemoveAt(i);    // Remove from screen 
                 }
                 else if (p.Y > 1000) // Remove if it falls off screen
                 {
-                    PowerUps.RemoveAt(i);
+                    PowerUps.RemoveAt(i); 
                 }
             }
         }
@@ -162,7 +161,7 @@ namespace BrickBreaker
                 IsPaddleBlinking = false;
             }
         }
-        private void UpdatePaddleEffects()
+        private void UpdatePaddleEffects() 
         {
             if (paddleExtenderTicksLeft > 0)
             {
@@ -208,18 +207,18 @@ namespace BrickBreaker
             ball.BrickStreak = 0;
             ball.Multiplier = 1;
 
-            double ballCenter = ball.X + ball.Radius;
+            double ballCenter = ball.X + ball.Radius; // Ball center X
             double paddleCenter = paddleX + paddleWidth / 2.0;
             double hitPos = (ballCenter - paddleCenter) / (paddleWidth / 2.0);
 
-            double speed = 9.0;
-            double maxX = speed * 0.75;
-            double newVX = hitPos * maxX;
+            double speed = 9.0; // Fixed speed after bounce
+            double maxX = speed * 0.75; // Max horizontal speed component
+            double newVX = hitPos * maxX; // Scale hit position to maxX
 
-            if (Math.Abs(newVX) < 2.0) newVX = newVX < 0 ? -2.0 : 2.0;
+            if (Math.Abs(newVX) < 2.0) newVX = newVX < 0 ? -2.0 : 2.0; // Minimum horizontal speed
 
-            ball.VX = newVX;
-            ball.VY = -Math.Sqrt(speed * speed - newVX * newVX);
+            ball.VX = newVX; // Set new horizontal velocity
+            ball.VY = -Math.Sqrt(speed * speed - newVX * newVX); // Calculate vertical velocity to maintain speed
         }
 
         public void StartLevel(int level, Rectangle playArea)
@@ -235,9 +234,9 @@ namespace BrickBreaker
             CurrentPaddleWidth = originalPaddleWidth;
             paddleExtenderTicksLeft = 0;
 
-            int bricksToSpawn = CurrentLevel switch { 1 => 15, 2 => 35, 3 => 60, _ => 15 };
+            int bricksToSpawn = CurrentLevel switch { 1 => 15, 2 => 35, 3 => 60, _ => 15 }; // Example counts
 
-            SpawnBricks(bricksToSpawn, playArea);
+            SpawnBricks(bricksToSpawn, playArea); // Spawn bricks based on level
             ResetBall(playArea);
             LevelLoaded?.Invoke(this, EventArgs.Empty);
         }

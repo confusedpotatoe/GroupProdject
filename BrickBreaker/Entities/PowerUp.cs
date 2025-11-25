@@ -24,7 +24,7 @@ namespace BrickBreaker.Entities
 
         public void UpdatePosition()
         {
-            Y += 3; // Fall speed
+            Y += 3; // Fall speed of the PowerUp
         }
 
         // This allows the PowerUp to draw itself
