@@ -378,6 +378,7 @@ namespace BrickBreaker
         {
             isGameOver = false;
             ballReadyToShoot = true;
+            
             gameEngine.StartLevel(1, playAreaRect);
             gameTimer.Start();
         }
