@@ -54,7 +54,7 @@ namespace BrickBreaker
             }
 
             // Update PowerUps
-            UpdatePowerUps(paddleX, paddleY);
+            UpdatePowerUps(paddleX, paddleY, playArea);
 
             // D. Check Level Completion
             if (Bricks.All(b => !b.IsVisible))
@@ -119,7 +119,7 @@ namespace BrickBreaker
             }
         }
 
-        private void UpdatePowerUps(double paddleX, int paddleY)
+        private void UpdatePowerUps(double paddleX, int paddleY, Rectangle playArea)
         {
             // Define the paddle hitbox using the CURRENT width
             Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, CurrentPaddleWidth, 20);
@@ -136,7 +136,7 @@ namespace BrickBreaker
                     ActivatePowerUp(p.Type); // <--- This triggers the effect!
                     PowerUps.RemoveAt(i);    // Remove from screen 
                 }
-                else if (p.Y > 1000) // Remove if it falls off screen
+                else if (p.Y > playArea.Bottom) // Remove only after leaving visible area
                 {
                     PowerUps.RemoveAt(i); 
                 }
