@@ -6,7 +6,9 @@ The gameplay runs inside a desktop window, while Spectre.Console menus handle lo
 
 ## Gameplay screenshot
 
-![Gameplay screenshot placeholder](docs/images/gameplay.png)
+<p align="center">
+  <img src="docs/images/gameplay.png" width="500">
+</p>
 
 ## Highlights
 
