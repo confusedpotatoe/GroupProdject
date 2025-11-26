@@ -8,15 +8,16 @@ namespace BrickBreaker
     {
         // --- Data ---
         private Random rand = new Random();
-
         public List<Ball> Balls { get; private set; } = new List<Ball>();
         public List<Brick> Bricks { get; private set; } = new List<Brick>();
         public List<PowerUp> PowerUps { get; private set; } = new List<PowerUp>();
         public List<ScorePopup> ScorePopups { get; private set; } = new List<ScorePopup>();
 
+        // --- Game State ---
         public int Score { get; private set; }
-
         public int CurrentLevel { get; private set; } = 1;
+
+        public double CurrentBallSpeed => 9.0 + (CurrentLevel - 1) * 1.5; // Example speed scaling with level
 
         // --- Paddle State ---
         public int CurrentPaddleWidth { get; private set; } = 100; // Default width
@@ -210,8 +211,8 @@ namespace BrickBreaker
             double ballCenter = ball.X + ball.Radius; // Ball center X
             double paddleCenter = paddleX + paddleWidth / 2.0;
             double hitPos = (ballCenter - paddleCenter) / (paddleWidth / 2.0);
-
-            double speed = 9.0; // Fixed speed after bounce
+            
+            double speed = CurrentBallSpeed; // Current ball speed
             double maxX = speed * 0.75; // Max horizontal speed component
             double newVX = hitPos * maxX; // Scale hit position to maxX
 
@@ -223,7 +224,13 @@ namespace BrickBreaker
 
         public void StartLevel(int level, Rectangle playArea)
         {
-            CurrentLevel = level > 3 ? 1 : level;
+            CurrentLevel = level > 5 ? 1 : level;
+
+            if (CurrentLevel == 1) // Reset score on new game
+            {
+                Score = 0;
+                ScoreChanged?.Invoke(this, Score);
+            }
 
             Bricks.Clear();
             Balls.Clear();
@@ -234,7 +241,7 @@ namespace BrickBreaker
             CurrentPaddleWidth = originalPaddleWidth;
             paddleExtenderTicksLeft = 0;
 
-            int bricksToSpawn = CurrentLevel switch { 1 => 15, 2 => 35, 3 => 60, _ => 15 }; // Example counts
+            int bricksToSpawn = CurrentLevel switch { 1 => 15, 2 => 25, 3 => 35, 4 => 45, 5 => 55, _ => 15}; // Example counts
 
             SpawnBricks(bricksToSpawn, playArea); // Spawn bricks based on level
             ResetBall(playArea);
