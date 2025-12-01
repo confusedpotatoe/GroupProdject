@@ -5,7 +5,7 @@ namespace BrickBreaker.Utilities
 {
     public static class GameUtils
     {
-        public static bool CheckCollision(Ball ball, Rectangle rect) // Axis-Aligned Bounding Box (AABB) collision detection
+        public static bool CheckCollision(Ball ball, Rectangle rect) // Axis-Aligned Bounding Box (AABB) collision detection, makes a (hitbox commen for 2d games)
         {
             return ball.X + ball.Radius * 2 >= rect.X && // Right edge of ball >= Left edge of rectangle
                    ball.X <= rect.X + rect.Width && // Left edge of ball <= Right edge of rectangle

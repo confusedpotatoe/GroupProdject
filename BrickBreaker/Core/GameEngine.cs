@@ -1,155 +1,212 @@
 ﻿using BrickBreaker.Entities;
 using BrickBreaker.Utilities;
 
-
 namespace BrickBreaker
 {
     public class GameEngine
     {
-        // --- Data ---
+        // ==========================================
+        // --- Data & State Storage ---
+        // ==========================================
+
+        // Random number generator for power-up drops, brick colors, and spawn positions.
         private Random rand = new Random();
 
+        // Lists to hold all active game objects. 
+        // 'private set' means other classes can read the list, but only GameEngine can replace the list itself.
         public List<Ball> Balls { get; private set; } = new List<Ball>();
         public List<Brick> Bricks { get; private set; } = new List<Brick>();
         public List<PowerUp> PowerUps { get; private set; } = new List<PowerUp>();
         public List<ScorePopup> ScorePopups { get; private set; } = new List<ScorePopup>();
 
-        // --- Game State ---
+        // ==========================================
+        // --- Game State Variables ---
+        // ==========================================
+
         public int Score { get; private set; }
         public int CurrentLevel { get; private set; } = 1;
         public int HighScore { get; private set; }
 
-        // Ball speed increases with level
-        public double CurrentBallSpeed => 9.0 + (CurrentLevel - 1) * 1.5; // Example speed scaling with level
+        // Calculates ball speed dynamically. 
+        // Base speed is 9.0, adds 1.5 speed for every level passed.
+        public double CurrentBallSpeed => 9.0 + (CurrentLevel - 1) * 1.5;
 
-        // --- Paddle State ---
-        public int CurrentPaddleWidth { get; private set; } = 100; // Default width
-        public bool IsPaddleBlinking { get; private set; } = false;
-        private int originalPaddleWidth = 100;
-        private int paddleExtenderTicksLeft = 0;
+        // ==========================================
+        // --- Paddle State & Effects ---
+        // ==========================================
 
-        // --- Events ---
+        public int CurrentPaddleWidth { get; private set; } = 100; // The width used for collision
+        public bool IsPaddleBlinking { get; private set; } = false; // Visual cue for power-up ending
+        private int originalPaddleWidth = 100; // Backup to restore width after power-up ends
+        private int paddleExtenderTicksLeft = 0; // Timer for the paddle size power-up
+
+        // ==========================================
+        // --- Events (Communication) ---
+        // ==========================================
+
+        // Fired when the last ball drops. '?' means it can be null (no subscribers).
         public event EventHandler? GameOver;
+        // Fired whenever points are added (updates the UI label).
         public event EventHandler<int>? ScoreChanged;
+        // Fired when a new level is ready (tells the Form to repaint).
         public event EventHandler? LevelLoaded;
 
-        // --- Main Loop ---
+        // ==========================================
+        // --- Main Game Loop ---
+        // ==========================================
+
+        // Called by the Timer in the Form every frame (approx 60 times/sec).
         public void Update(double deltaTime, Rectangle playArea, double paddleX, int paddleY)
         {
-            // A. Handle Effects (Timer for paddle extender)
+            // 1. Manage Timers (e.g., shrink paddle if time is up)
             UpdatePaddleEffects();
 
-            // Update Balls
+            // 2. Update Balls
+            // We loop BACKWARDS (Count - 1 down to 0).
+            // This is crucial: if we remove a ball from the list, looping forward would crash or skip items.
             for (int i = Balls.Count - 1; i >= 0; i--)
             {
                 var ball = Balls[i];
+
+                // Move ball based on its VX/VY
                 ball.UpdatePosition();
-                // Use CurrentPaddleWidth property
+
+                // Check if it hit walls, bricks, paddle, or floor
                 HandleBallCollisions(ball, i, playArea, paddleX, paddleY, CurrentPaddleWidth);
             }
+
+            // 3. Update Score Popups (the floating text)
             for (int i = ScorePopups.Count - 1; i >= 0; i--)
             {
-                ScorePopups[i].Update();
+                ScorePopups[i].Update(); // Moves text up and fades opacity
+
+                // If text is fully transparent, remove it to save memory
                 if (!ScorePopups[i].IsAlive)
                 {
                     ScorePopups.RemoveAt(i);
                 }
             }
 
-            // Update PowerUps
+            // 4. Update PowerUps (movement and paddle collection)
             UpdatePowerUps(paddleX, paddleY, playArea);
 
-            // D. Check Level Completion
+            // 5. Check Level Completion
+            // LINQ: Check if "All" bricks satisfy the condition "IsVisible is false"
             if (Bricks.All(b => !b.IsVisible))
             {
+                // Load the next level immediately
                 StartLevel(CurrentLevel + 1, playArea);
             }
         }
 
-        // --- Physics Logic ---
+        // ==========================================
+        // --- Physics & Collision Logic ---
+        // ==========================================
+
         private void HandleBallCollisions(Ball ball, int ballIndex, Rectangle playArea, double paddleX, int paddleY, int paddleWidth)
         {
-            // Wall Collisions
+            // --- Wall Collisions ---
+            // Left Wall: Reset position to edge, reverse horizontal direction
             if (ball.X <= playArea.Left) { ball.X = playArea.Left; ball.VX = -ball.VX; }
+            // Right Wall: Reset position (accounting for diameter), reverse horizontal
             if (ball.X + ball.Radius * 2 >= playArea.Right) { ball.X = playArea.Right - ball.Radius * 2; ball.VX = -ball.VX; }
+            // Ceiling: Reset position, reverse vertical direction
             if (ball.Y <= playArea.Top) { ball.Y = playArea.Top; ball.VY = -ball.VY; }
 
-            // Floor Collision
+            // --- Floor Collision (Death) ---
             if (ball.Y > playArea.Bottom)
             {
-                Balls.RemoveAt(ballIndex);
+                Balls.RemoveAt(ballIndex); // Kill this specific ball
+
+                // If that was the last ball...
                 if (Balls.Count == 0)
                 {
+                    // Check for high score
                     if (Score > HighScore)
                     {
                         HighScore = Score;
                     }
 
+                    // Trigger the GameOver event so the Form can show the "Game Over" screen
                     GameOver?.Invoke(this, EventArgs.Empty);
                 }
-
-                return;
+                return; // Stop processing this ball
             }
 
-            // Brick Collisions
+            // --- Brick Collisions ---
+            // Only check bricks that are currently visible
             foreach (var brick in Bricks.Where(b => b.IsVisible))
             {
+                // Create a temporary rectangle for the brick for intersection testing
                 Rectangle brickRect = new Rectangle(brick.X, brick.Y, brick.Width, brick.Height);
 
+                // Helper: Check intersection between Ball Circle and Brick Rectangle
                 if (GameUtils.CheckCollision(ball, brickRect))
                 {
-                    brick.IsVisible = false;
-                    ball.InvertVerticalVelocity();
-                    HandleScoring(ball, brick);
-                    ScoreChanged?.Invoke(this, Score);
+                    brick.IsVisible = false; // "Destroy" brick
+                    ball.InvertVerticalVelocity(); // Simple bounce (physics could be improved here)
 
-                    // FIX: Do not activate powerup here. Just Try to SPAWN one.
+                    HandleScoring(ball, brick); // Add points and streaks
+                    ScoreChanged?.Invoke(this, Score); // Update UI
+
+                    // Try to drop a powerup at the brick's center X
                     TrySpawnPowerUp(brick.X + brick.Width / 2, brick.Y);
 
-                    break;
+                    break; // Ball can only hit one brick per frame, so exit loop
                 }
             }
 
-            // Paddle Collision
+            // --- Paddle Collision ---
+            // Create hitbox for paddle
             Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, paddleWidth, 20);
+
+            // Check collision
             if (GameUtils.CheckCollision(ball, paddleRect))
             {
+                // Calculate custom bounce angle logic
                 HandlePaddleBounce(ball, paddleX, paddleWidth);
             }
         }
 
+        // ==========================================
         // --- PowerUp Logic ---
+        // ==========================================
 
         private void TrySpawnPowerUp(int x, int y)
         {
-            // 20% Chance to drop
+            // 20% Chance (0.0 to 1.0)
             if (rand.NextDouble() < 0.2)
             {
-                // Pick random type
+                // Get all possible enum values (Multiball, PaddleExtender, etc.)
                 PowerUpType[] types = Enum.GetValues<PowerUpType>();
+                // Pick a random one
                 PowerUpType randomType = types[rand.Next(types.Length)];
+                // Add to list
                 PowerUps.Add(new PowerUp(x, y, randomType));
             }
         }
 
         private void UpdatePowerUps(double paddleX, int paddleY, Rectangle playArea)
         {
-            // Define the paddle hitbox using the CURRENT width
             Rectangle paddleRect = new Rectangle((int)paddleX, paddleY, CurrentPaddleWidth, 20);
 
+            // Loop backwards to allow removal
             for (int i = PowerUps.Count - 1; i >= 0; i--)
             {
                 var p = PowerUps[i];
-                p.UpdatePosition();
+                p.UpdatePosition(); // Move down
 
-                // Check if PowerUp hits Paddle
+                // Create hitbox for the powerup
                 Rectangle powerUpRect = new Rectangle(p.X, p.Y, p.Width, p.Height);
+
+                // 1. Check if Paddle caught it
                 if (paddleRect.IntersectsWith(powerUpRect))
                 {
-                    ActivatePowerUp(p.Type); // <--- This triggers the effect!
-                    PowerUps.RemoveAt(i);    // Remove from screen
+                    ActivatePowerUp(p.Type); // Apply the effect
+                    PowerUps.RemoveAt(i);    // Remove from world
                 }
-                else if (p.Y > playArea.Bottom) // Remove only after leaving visible area
+                // 2. Check if it fell off screen
+                else if (p.Y > playArea.Bottom)
                 {
                     PowerUps.RemoveAt(i);
                 }
@@ -158,159 +215,195 @@ namespace BrickBreaker
 
         private void ActivatePowerUp(PowerUpType type)
         {
-            // 1. Handle Multiball
+            // --- Multiball Logic ---
             if (type == PowerUpType.Multiball && Balls.Count > 0)
             {
-                var mainBall = Balls[0]; // Copy the main ball
+                var mainBall = Balls[0]; // Reference existing ball for position
 
-                // Spawn 2 new balls moving in opposite directions
+                // Add 2 new balls. 
+                // Note: Hardcoded velocity (6, -6) gives them an instant upward/diagonal spread.
                 Balls.Add(new Ball(mainBall.X, mainBall.Y, 6, -6, mainBall.Radius));
                 Balls.Add(new Ball(mainBall.X, mainBall.Y, -6, -6, mainBall.Radius));
             }
-            // 2. Handle Paddle Extender
+            // --- Paddle Extender Logic ---
             else if (type == PowerUpType.PaddleExtender)
             {
-                CurrentPaddleWidth += 50;  // Grow Paddle
-                paddleExtenderTicksLeft = 600; // Last for ~10 seconds
-                IsPaddleBlinking = false;
+                CurrentPaddleWidth += 50;  // Increase logic width
+                paddleExtenderTicksLeft = 600; // 600 frames @ 60fps = 10 seconds
+                IsPaddleBlinking = false; // Reset blinking status
             }
         }
+
         private void UpdatePaddleEffects()
         {
+            // If timer is active...
             if (paddleExtenderTicksLeft > 0)
             {
-                paddleExtenderTicksLeft--;
+                paddleExtenderTicksLeft--; // Tick down
 
-                // Blink when running out
+                // Start blinking in the last 1 second (60 frames)
                 if (paddleExtenderTicksLeft < 60)
                 {
+                    // Toggle boolean every 4 frames for rapid blinking effect
                     IsPaddleBlinking = (paddleExtenderTicksLeft / 4) % 2 == 0;
                 }
 
+                // Time is up
                 if (paddleExtenderTicksLeft == 0)
                 {
-                    CurrentPaddleWidth = originalPaddleWidth;
+                    CurrentPaddleWidth = originalPaddleWidth; // Shrink back
                     IsPaddleBlinking = false;
                 }
             }
         }
-            
+
+        // ==========================================
+        // --- Scoring Logic ---
+        // ==========================================
+
         private void HandleScoring(Ball ball, Brick brick)
         {
-            ball.BrickStreak++;
-            ball.Multiplier = Math.Max(1, ball.BrickStreak);
+            ball.BrickStreak++; // Increment streak for this specific ball
+            ball.Multiplier = Math.Max(1, ball.BrickStreak); // Multiplier matches streak
 
             int points = 10 * ball.Multiplier;
             Score += points;
-            ScoreChanged?.Invoke(this, Score);
+            ScoreChanged?.Invoke(this, Score); // Notify Form to update label
 
-            // Add the visual popup (+10)
+            // Create the "+10" floating text
             ScorePopups.Add(new ScorePopup(brick.X + brick.Width / 2, brick.Y, points));
 
-            // Add multiplier popup if streak is active (x2, x3)
+            // Create the "x2", "x3" text if applicable
             if (ball.Multiplier > 1)
             {
                 ScorePopups.Add(new ScorePopup(brick.X + brick.Width / 2 + 40, brick.Y - 20, $"x{ball.Multiplier}"));
             }
         }
 
-        // --- Helpers & Math ---
+        // ==========================================
+        // --- Helpers & Physics Math ---
+        // ==========================================
 
+        // Adjusts ball bounce angle based on WHERE it hit the paddle
         private void HandlePaddleBounce(Ball ball, double paddleX, int paddleWidth)
         {
+            // Reset streak when hitting paddle (combo broken)
             ball.BrickStreak = 0;
             ball.Multiplier = 1;
 
-            double ballCenter = ball.X + ball.Radius; // Ball center X
+            // Calculate center points
+            double ballCenter = ball.X + ball.Radius;
             double paddleCenter = paddleX + paddleWidth / 2.0;
+
+            // Determine relative hit position:
+            // -1.0 = Far left edge, 0.0 = Center, 1.0 = Far right edge
             double hitPos = (ballCenter - paddleCenter) / (paddleWidth / 2.0);
 
-            double speed = CurrentBallSpeed; // Current ball speed
-            double maxX = speed * 0.75; // Max horizontal speed component
-            double newVX = hitPos * maxX; // Scale hit position to maxX
+            // Math to keep total speed constant but change angle
+            double speed = CurrentBallSpeed;
+            double maxX = speed * 0.75; // Cap horizontal speed at 75% of total speed
+            double newVX = hitPos * maxX; // Calculate new Horizontal Velocity
 
-            if (Math.Abs(newVX) < 2.0) newVX = newVX < 0 ? -2.0 : 2.0; // Minimum horizontal speed
+            // Prevent ball from going perfectly straight up (stalling game)
+            if (Math.Abs(newVX) < 2.0) newVX = newVX < 0 ? -2.0 : 2.0;
 
-            ball.VX = newVX; // Set new horizontal velocity
-            ball.VY = -Math.Sqrt(speed * speed - newVX * newVX); // Calculate vertical velocity to maintain speed
+            ball.VX = newVX;
+            // Calculate Vertical Velocity using Pythagoras: a^2 + b^2 = c^2 (speed^2)
+            // VY = -Sqrt(Speed^2 - VX^2). Negative because UP is negative Y.
+            ball.VY = -Math.Sqrt(speed * speed - newVX * newVX);
         }
+
+        // ==========================================
+        // --- Level Management ---
+        // ==========================================
 
         public void StartLevel(int level, Rectangle playArea)
         {
+            // Loop levels 1-5
             CurrentLevel = level > 5 ? 1 : level;
 
-            if (CurrentLevel == 1) // Reset score on new game
+            // Reset score if restarting the whole game
+            if (CurrentLevel == 1)
             {
                 Score = 0;
                 ScoreChanged?.Invoke(this, Score);
             }
 
+            // Clear all entities from previous level
             Bricks.Clear();
             Balls.Clear();
             PowerUps.Clear();
             ScorePopups.Clear();
 
-            // Reset paddle
+            // Reset paddle state
             CurrentPaddleWidth = originalPaddleWidth;
             paddleExtenderTicksLeft = 0;
 
-            int bricksToSpawn = CurrentLevel switch { 1 => 15, 2 => 25, 3 => 35, 4 => 45, 5 => 55, _ => 15}; // Example counts
+            // Determine brick count based on level
+            // "switch expression" (C# 8.0+)
+            int bricksToSpawn = CurrentLevel switch { 1 => 15, 2 => 25, 3 => 35, 4 => 45, 5 => 55, _ => 15 };
 
-            SpawnBricks(bricksToSpawn, playArea); // Spawn bricks based on level
+            SpawnBricks(bricksToSpawn, playArea);
             ResetBall(playArea);
+
+            // Notify Form that setup is done
             LevelLoaded?.Invoke(this, EventArgs.Empty);
         }
 
         private void SpawnBricks(int count, Rectangle playArea)
         {
+            // 1. Create a list of all possible grid coordinates (slots)
             var slots = new List<Point>();
             for (int r = 0; r < GameConstants.InitialBrickRows; r++)
                 for (int c = 0; c < GameConstants.InitialBrickCols; c++)
-                    slots.Add(new Point(c, r));
+                    slots.Add(new Point(c, r)); // Store grid coordinates (0,0), (0,1), etc.
 
+            // Calculate offset to start drawing
             int startX = playArea.Left + GameConstants.PlayAreaMargin;
             int startY = playArea.Top + GameConstants.PlayAreaMargin;
 
+            // 2. Loop until we have spawned enough bricks OR ran out of slots
             for (int i = 0; i < count && slots.Count > 0; i++)
             {
+                // Pick a random index from the available slots
                 int idx = rand.Next(slots.Count);
                 Point slot = slots[idx];
 
+                // Add the brick
                 Bricks.Add(new Brick
                 {
+                    // Calculate pixel position based on grid slot * spacing
                     X = startX + slot.X * GameConstants.BrickXSpacing,
                     Y = startY + slot.Y * GameConstants.BrickYSpacing,
                     Width = GameConstants.BrickWidth,
                     Height = GameConstants.BrickHeight,
                     IsVisible = true,
+                    // Random RGB Color
                     BrickColor = Color.FromArgb(rand.Next(50, 255), rand.Next(50, 255), rand.Next(50, 255))
                 });
+
+                // Remove the used slot so we don't place two bricks on top of each other
                 slots.RemoveAt(idx);
             }
         }
+
+        // Handles resizing the game window
         public void ShiftWorld(int dx, int dy)
         {
-            // Shift Balls
+            // Shift every entity by the change in X and Y
             foreach (var b in Balls) { b.X += dx; b.Y += dy; }
-
-            // Shift Bricks
             foreach (var b in Bricks) { b.X += dx; b.Y += dy; }
-
-            // Shift PowerUps
             foreach (var p in PowerUps) { p.X += dx; p.Y += dy; }
-
-            // Shift Score Popups
-            foreach (var s in ScorePopups) { s.Shift(dx, dy); }
-            // Note: You will need to add a simple .Shift(x,y) method to ScorePopup class too, 
-            // or just access s.X/s.Y directly if the setters are public.
+            foreach (var s in ScorePopups) { s.Shift(dx, dy); } // Assumes ScorePopup has a Shift helper
         }
 
         private void ResetBall(Rectangle playArea)
         {
+            // Spawn ball in center-bottom
             Balls.Add(new Ball(
                 x: playArea.Left + playArea.Width / 2,
                 y: playArea.Bottom - 100,
-                vx: 0, vy: 0,
+                vx: 0, vy: 0, // IMPORTANT: Spawns with 0 velocity (won't move yet)
                 radius: GameConstants.BallRadius
             ));
         }
